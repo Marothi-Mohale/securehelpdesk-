@@ -13,13 +13,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<TicketComment> TicketComments => Set<TicketComment>();
-    public DbSet<TicketAuditHistory> TicketAuditHistory => Set<TicketAuditHistory>();
+    public DbSet<TicketAuditLog> TicketAuditLogs => Set<TicketAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         builder.ApplyConfiguration(new TicketConfiguration());
         builder.ApplyConfiguration(new TicketCommentConfiguration());
-        builder.ApplyConfiguration(new TicketAuditHistoryConfiguration());
+        builder.ApplyConfiguration(new TicketAuditLogConfiguration());
     }
 }

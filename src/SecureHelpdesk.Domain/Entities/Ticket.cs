@@ -11,9 +11,11 @@ public class Ticket : BaseEntity
     public TicketStatus Status { get; set; } = TicketStatus.Open;
     public string CreatedByUserId { get; set; } = string.Empty;
     public string? AssignedToUserId { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAtUtc { get; set; }
 
     public ApplicationUser CreatedByUser { get; set; } = null!;
     public ApplicationUser? AssignedToUser { get; set; }
     public ICollection<TicketComment> Comments { get; set; } = new List<TicketComment>();
-    public ICollection<TicketAuditHistory> AuditHistory { get; set; } = new List<TicketAuditHistory>();
+    public ICollection<TicketAuditLog> AuditLogs { get; set; } = new List<TicketAuditLog>();
 }

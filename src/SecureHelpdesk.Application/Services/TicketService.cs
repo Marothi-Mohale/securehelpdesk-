@@ -39,12 +39,12 @@ public class TicketService : ITicketService
             CreatedByUserId = userContext.UserId
         };
 
-        ticket.AuditHistory.Add(new TicketAuditHistory
+        ticket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = ticket.Id,
-            PerformedByUserId = userContext.UserId,
+            ChangedByUserId = userContext.UserId,
             ActionType = AuditActionType.TicketCreated,
-            Description = "Ticket created"
+            NewValue = TicketStatus.Open.ToString()
         });
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
@@ -109,9 +109,9 @@ public class TicketService : ITicketService
             .Include(t => t.CreatedByUser)
             .Include(t => t.AssignedToUser)
             .Include(t => t.Comments)
-                .ThenInclude(c => c.User)
-            .Include(t => t.AuditHistory)
-                .ThenInclude(a => a.PerformedByUser)
+                .ThenInclude(c => c.AuthorUser)
+            .Include(t => t.AuditLogs)
+                .ThenInclude(a => a.ChangedByUser)
             .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
 
         if (ticket is null)
@@ -137,12 +137,13 @@ public class TicketService : ITicketService
 
         ticket.Status = request.Status;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        ticket.AuditHistory.Add(new TicketAuditHistory
+        ticket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = ticket.Id,
-            PerformedByUserId = userContext.UserId,
+            ChangedByUserId = userContext.UserId,
             ActionType = AuditActionType.StatusChanged,
-            Description = $"Status changed from {previousStatus} to {request.Status}"
+            OldValue = previousStatus.ToString(),
+            NewValue = request.Status.ToString()
         });
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
@@ -172,16 +173,17 @@ public class TicketService : ITicketService
         }
 
         var ticket = await GetTrackedTicketAsync(ticketId, cancellationToken);
+        var previousAssigneeUserId = ticket.AssignedToUserId;
         ticket.AssignedToUserId = request.AgentUserId;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
 
-        var assigneeName = await _userDirectoryService.GetUserDisplayNameAsync(request.AgentUserId, cancellationToken);
-        ticket.AuditHistory.Add(new TicketAuditHistory
+        ticket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = ticket.Id,
-            PerformedByUserId = userContext.UserId,
+            ChangedByUserId = userContext.UserId,
             ActionType = AuditActionType.AgentAssigned,
-            Description = $"Assigned to agent {assigneeName}"
+            OldValue = previousAssigneeUserId,
+            NewValue = request.AgentUserId
         });
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
@@ -199,17 +201,17 @@ public class TicketService : ITicketService
         ticket.Comments.Add(new TicketComment
         {
             TicketId = ticket.Id,
-            UserId = userContext.UserId,
+            AuthorUserId = userContext.UserId,
             Content = request.Content.Trim()
         });
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        ticket.AuditHistory.Add(new TicketAuditHistory
+        ticket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = ticket.Id,
-            PerformedByUserId = userContext.UserId,
+            ChangedByUserId = userContext.UserId,
             ActionType = AuditActionType.CommentAdded,
-            Description = "Comment added"
+            NewValue = "Comment added"
         });
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
@@ -241,9 +243,9 @@ public class TicketService : ITicketService
             .Include(t => t.CreatedByUser)
             .Include(t => t.AssignedToUser)
             .Include(t => t.Comments)
-                .ThenInclude(c => c.User)
-            .Include(t => t.AuditHistory)
-                .ThenInclude(a => a.PerformedByUser)
+                .ThenInclude(c => c.AuthorUser)
+            .Include(t => t.AuditLogs)
+                .ThenInclude(a => a.ChangedByUser)
             .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
 
         if (ticket is null)

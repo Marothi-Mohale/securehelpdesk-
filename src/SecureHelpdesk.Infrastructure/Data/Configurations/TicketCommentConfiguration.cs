@@ -14,6 +14,7 @@ public class TicketCommentConfiguration : IEntityTypeConfiguration<TicketComment
             .HasMaxLength(1000)
             .IsRequired();
 
+        entity.Property(c => c.CreatedAtUtc).IsRequired();
         entity.HasIndex(c => c.TicketId);
 
         entity.HasOne(c => c.Ticket)
@@ -21,9 +22,9 @@ public class TicketCommentConfiguration : IEntityTypeConfiguration<TicketComment
             .HasForeignKey(c => c.TicketId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        entity.HasOne(c => c.User)
-            .WithMany(u => u.Comments)
-            .HasForeignKey(c => c.UserId)
+        entity.HasOne(c => c.AuthorUser)
+            .WithMany(u => u.AuthoredComments)
+            .HasForeignKey(c => c.AuthorUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

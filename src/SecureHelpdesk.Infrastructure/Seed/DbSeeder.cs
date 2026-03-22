@@ -65,7 +65,7 @@ public class DbSeeder
         firstTicket.Comments.Add(new TicketComment
         {
             TicketId = firstTicket.Id,
-            UserId = user1.Id,
+            AuthorUserId = user1.Id,
             Content = "Issue started after my password reset.",
             CreatedAtUtc = DateTime.UtcNow.AddDays(-3)
         });
@@ -73,36 +73,38 @@ public class DbSeeder
         firstTicket.Comments.Add(new TicketComment
         {
             TicketId = firstTicket.Id,
-            UserId = agent1.Id,
+            AuthorUserId = agent1.Id,
             Content = "Investigating SSO token configuration for your account.",
             CreatedAtUtc = DateTime.UtcNow.AddDays(-2)
         });
 
-        firstTicket.AuditHistory.Add(new TicketAuditHistory
+        firstTicket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = firstTicket.Id,
-            PerformedByUserId = user1.Id,
+            ChangedByUserId = user1.Id,
             ActionType = AuditActionType.TicketCreated,
-            Description = "Ticket created",
-            CreatedAtUtc = DateTime.UtcNow.AddDays(-3)
+            NewValue = TicketStatus.Open.ToString(),
+            ChangedAtUtc = DateTime.UtcNow.AddDays(-3)
         });
 
-        firstTicket.AuditHistory.Add(new TicketAuditHistory
+        firstTicket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = firstTicket.Id,
-            PerformedByUserId = admin.Id,
+            ChangedByUserId = admin.Id,
             ActionType = AuditActionType.AgentAssigned,
-            Description = $"Assigned to agent {agent1.FullName}",
-            CreatedAtUtc = DateTime.UtcNow.AddDays(-2)
+            OldValue = null,
+            NewValue = agent1.Id,
+            ChangedAtUtc = DateTime.UtcNow.AddDays(-2)
         });
 
-        firstTicket.AuditHistory.Add(new TicketAuditHistory
+        firstTicket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = firstTicket.Id,
-            PerformedByUserId = agent1.Id,
+            ChangedByUserId = agent1.Id,
             ActionType = AuditActionType.StatusChanged,
-            Description = $"Status changed from {TicketStatus.Open} to {TicketStatus.InProgress}",
-            CreatedAtUtc = DateTime.UtcNow.AddDays(-2)
+            OldValue = TicketStatus.Open.ToString(),
+            NewValue = TicketStatus.InProgress.ToString(),
+            ChangedAtUtc = DateTime.UtcNow.AddDays(-2)
         });
 
         var secondTicket = new Ticket
@@ -116,22 +118,23 @@ public class DbSeeder
             CreatedAtUtc = DateTime.UtcNow.AddDays(-1)
         };
 
-        secondTicket.AuditHistory.Add(new TicketAuditHistory
+        secondTicket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = secondTicket.Id,
-            PerformedByUserId = user2.Id,
+            ChangedByUserId = user2.Id,
             ActionType = AuditActionType.TicketCreated,
-            Description = "Ticket created",
-            CreatedAtUtc = DateTime.UtcNow.AddDays(-1)
+            NewValue = TicketStatus.Open.ToString(),
+            ChangedAtUtc = DateTime.UtcNow.AddDays(-1)
         });
 
-        secondTicket.AuditHistory.Add(new TicketAuditHistory
+        secondTicket.AuditLogs.Add(new TicketAuditLog
         {
             TicketId = secondTicket.Id,
-            PerformedByUserId = admin.Id,
+            ChangedByUserId = admin.Id,
             ActionType = AuditActionType.AgentAssigned,
-            Description = $"Assigned to agent {agent2.FullName}",
-            CreatedAtUtc = DateTime.UtcNow.AddHours(-20)
+            OldValue = null,
+            NewValue = agent2.Id,
+            ChangedAtUtc = DateTime.UtcNow.AddHours(-20)
         });
 
         _dbContext.Tickets.AddRange(firstTicket, secondTicket);

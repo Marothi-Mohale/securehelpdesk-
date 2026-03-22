@@ -18,6 +18,7 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .HasMaxLength(4000)
             .IsRequired();
 
+        entity.Property(t => t.CreatedAtUtc).IsRequired();
         entity.HasIndex(t => t.Status);
         entity.HasIndex(t => t.Priority);
         entity.HasIndex(t => t.AssignedToUserId);
