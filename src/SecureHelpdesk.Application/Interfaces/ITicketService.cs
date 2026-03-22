@@ -1,5 +1,6 @@
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
+using SecureHelpdesk.Application.Models;
 
 namespace SecureHelpdesk.Application.Interfaces;
 

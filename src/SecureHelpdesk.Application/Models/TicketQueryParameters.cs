@@ -1,6 +1,6 @@
 using SecureHelpdesk.Domain.Enums;
 
-namespace SecureHelpdesk.Application;
+namespace SecureHelpdesk.Application.Models;
 
 public class TicketQueryParameters
 {

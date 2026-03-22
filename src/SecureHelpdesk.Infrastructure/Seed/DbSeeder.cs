@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Domain.Constants;
 using SecureHelpdesk.Domain.Entities;
 using SecureHelpdesk.Domain.Enums;
-using SecureHelpdesk.Infrastructure.Persistence;
+using SecureHelpdesk.Infrastructure.Data;
 
-namespace SecureHelpdesk.Infrastructure.Seeding;
+namespace SecureHelpdesk.Infrastructure.Seed;
 
 public class DbSeeder
 {

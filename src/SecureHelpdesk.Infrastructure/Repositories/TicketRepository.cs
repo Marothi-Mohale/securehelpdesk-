@@ -1,7 +1,8 @@
 using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Domain.Entities;
+using SecureHelpdesk.Infrastructure.Data;
 
-namespace SecureHelpdesk.Infrastructure.Persistence;
+namespace SecureHelpdesk.Infrastructure.Repositories;
 
 public class TicketRepository : ITicketRepository
 {

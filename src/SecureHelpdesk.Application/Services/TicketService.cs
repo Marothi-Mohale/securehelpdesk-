@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
+using SecureHelpdesk.Application.Mapping;
+using SecureHelpdesk.Application.Models;
 using SecureHelpdesk.Domain.Constants;
 using SecureHelpdesk.Domain.Entities;
 using SecureHelpdesk.Domain.Enums;
@@ -118,7 +120,7 @@ public class TicketService : ITicketService
         }
 
         EnsureTicketAccess(ticket, userContext);
-        return MapDetail(ticket);
+        return ticket.ToDetailDto();
     }
 
     public async Task<TicketDetailDto> UpdateStatusAsync(Guid ticketId, UpdateTicketStatusRequestDto request, UserContext userContext, CancellationToken cancellationToken)
@@ -273,44 +275,4 @@ public class TicketService : ITicketService
         }
     }
 
-    private static TicketDetailDto MapDetail(Ticket ticket)
-    {
-        return new TicketDetailDto
-        {
-            Id = ticket.Id,
-            Title = ticket.Title,
-            Description = ticket.Description,
-            Status = ticket.Status,
-            Priority = ticket.Priority,
-            CreatedAtUtc = ticket.CreatedAtUtc,
-            UpdatedAtUtc = ticket.UpdatedAtUtc,
-            CreatedByUserId = ticket.CreatedByUserId,
-            CreatedByUserName = ticket.CreatedByUser.FullName,
-            AssignedToUserId = ticket.AssignedToUserId,
-            AssignedToUserName = ticket.AssignedToUser?.FullName,
-            Comments = ticket.Comments
-                .OrderBy(c => c.CreatedAtUtc)
-                .Select(c => new TicketCommentDto
-                {
-                    Id = c.Id,
-                    Content = c.Content,
-                    CreatedAtUtc = c.CreatedAtUtc,
-                    UserId = c.UserId,
-                    UserName = c.User.FullName
-                })
-                .ToList(),
-            AuditHistory = ticket.AuditHistory
-                .OrderByDescending(a => a.CreatedAtUtc)
-                .Select(a => new TicketAuditHistoryDto
-                {
-                    Id = a.Id,
-                    ActionType = a.ActionType,
-                    Description = a.Description,
-                    CreatedAtUtc = a.CreatedAtUtc,
-                    PerformedByUserId = a.PerformedByUserId,
-                    PerformedByUserName = a.PerformedByUser.FullName
-                })
-                .ToList()
-        };
-    }
 }

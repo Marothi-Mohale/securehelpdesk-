@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecureHelpdesk.Api.Extensions;
-using SecureHelpdesk.Application;
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
+using SecureHelpdesk.Application.Models;
 using SecureHelpdesk.Domain.Constants;
 using SecureHelpdesk.Domain.Enums;
 

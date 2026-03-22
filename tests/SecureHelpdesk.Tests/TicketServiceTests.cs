@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using SecureHelpdesk.Application;
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
+using SecureHelpdesk.Application.Models;
 using SecureHelpdesk.Application.Services;
 using SecureHelpdesk.Domain.Constants;
 using SecureHelpdesk.Domain.Entities;
 using SecureHelpdesk.Domain.Enums;
-using SecureHelpdesk.Infrastructure.Persistence;
+using SecureHelpdesk.Infrastructure.Data;
+using SecureHelpdesk.Infrastructure.Repositories;
 using Xunit;
 
 namespace SecureHelpdesk.Tests;

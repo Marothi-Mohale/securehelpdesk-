@@ -9,17 +9,19 @@ using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Application.Services;
 using SecureHelpdesk.Domain.Entities;
 using SecureHelpdesk.Infrastructure.Authentication;
+using SecureHelpdesk.Infrastructure.Data;
 using SecureHelpdesk.Infrastructure.Identity;
-using SecureHelpdesk.Infrastructure.Persistence;
-using SecureHelpdesk.Infrastructure.Seeding;
+using SecureHelpdesk.Infrastructure.Repositories;
+using SecureHelpdesk.Infrastructure.Seed;
 
-namespace SecureHelpdesk.Infrastructure;
+namespace SecureHelpdesk.Infrastructure.Configuration;
 
-public static class ServiceCollectionExtensions
+public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
@@ -63,7 +65,7 @@ public static class ServiceCollectionExtensions
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorizationBuilder();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITicketService, TicketService>();
