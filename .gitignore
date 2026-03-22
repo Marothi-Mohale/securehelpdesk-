@@ -1,0 +1,21 @@
+# Build outputs
+bin/
+obj/
+
+# Local tooling and caches
+.appdata/
+.dotnet-cli/
+.nuget/
+
+# Local runtime artifacts
+*.log
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS files
+Thumbs.db
+.DS_Store

@@ -104,6 +104,9 @@
             <summary>
             Returns agents available for ticket assignment.
             </summary>
+            <remarks>
+            This lightweight lookup endpoint exists primarily to support assignment workflows in the demo client and future admin-facing UI scenarios.
+            </remarks>
         </member>
     </members>
 </doc>

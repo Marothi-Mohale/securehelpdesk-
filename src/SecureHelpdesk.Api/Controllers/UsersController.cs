@@ -26,9 +26,14 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Returns agents available for ticket assignment.
     /// </summary>
+    /// <remarks>
+    /// This lightweight lookup endpoint exists primarily to support assignment workflows in the demo client and future admin-facing UI scenarios.
+    /// </remarks>
     [HttpGet("agents")]
     [Authorize(Roles = RoleNames.Admin)]
     [ProducesResponseType(typeof(IReadOnlyCollection<UserLookupDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyCollection<UserLookupDto>>> GetAgents(CancellationToken cancellationToken)
     {
         var agents = await _userDirectoryService.GetUsersInRoleAsync(RoleNames.Agent, cancellationToken);

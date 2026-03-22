@@ -6,6 +6,18 @@ namespace SecureHelpdesk.Api.Middleware;
 public class RequestLoggingMiddleware
 {
     private static readonly PathString SwaggerPath = new("/swagger");
+    private static readonly HashSet<string> StaticAssetExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".css",
+        ".js",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".svg",
+        ".ico",
+        ".map"
+    };
 
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;
@@ -20,7 +32,7 @@ public class RequestLoggingMiddleware
     {
         context.Response.Headers["X-Trace-Id"] = context.TraceIdentifier;
 
-        if (context.Request.Path.StartsWithSegments(SwaggerPath))
+        if (ShouldSkipLogging(context.Request.Path))
         {
             await _next(context);
             return;
@@ -83,5 +95,11 @@ public class RequestLoggingMiddleware
             context.Request.Path.Value,
             statusCode,
             elapsed);
+    }
+
+    private static bool ShouldSkipLogging(PathString requestPath)
+    {
+        return requestPath.StartsWithSegments(SwaggerPath)
+            || (Path.HasExtension(requestPath.Value) && StaticAssetExtensions.Contains(Path.GetExtension(requestPath.Value)));
     }
 }
