@@ -1,5 +1,8 @@
 namespace SecureHelpdesk.Application.DTOs.Common;
 
+/// <summary>
+/// Standard wrapper for paginated list responses.
+/// </summary>
 public class PaginatedResponseDto<T>
 {
     public required IReadOnlyCollection<T> Items { get; init; }

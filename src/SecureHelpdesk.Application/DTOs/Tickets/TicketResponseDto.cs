@@ -2,6 +2,9 @@ using SecureHelpdesk.Domain.Enums;
 
 namespace SecureHelpdesk.Application.DTOs.Tickets;
 
+/// <summary>
+/// Full ticket detail response including comments and audit history.
+/// </summary>
 public class TicketResponseDto
 {
     public required Guid Id { get; init; }

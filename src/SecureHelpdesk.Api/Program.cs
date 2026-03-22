@@ -18,7 +18,17 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "Secure Helpdesk API Docs";
+        options.DisplayRequestDuration();
+        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
+        options.DefaultModelsExpandDepth(2);
+        options.EnablePersistAuthorization();
+    });
+
+    app.MapGet("/", () => Results.Redirect("/swagger"))
+        .ExcludeFromDescription();
 }
 
 app.UseHttpsRedirection();

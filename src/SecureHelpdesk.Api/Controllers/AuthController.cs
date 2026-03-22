@@ -10,6 +10,7 @@ namespace SecureHelpdesk.Api.Controllers;
 /// <summary>
 /// Handles user registration, login, and the current authenticated user profile.
 /// </summary>
+[Tags("Auth")]
 [ApiController]
 [Route("api/auth")]
 [Produces("application/json")]
@@ -25,6 +26,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Registers a new end user account and returns a bearer token for immediate use.
     /// </summary>
+    /// <remarks>
+    /// Use this endpoint to create a normal user account for the helpdesk system. The response includes a JWT so the new user can call secured endpoints immediately.
+    /// </remarks>
     [HttpPost("register")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
@@ -41,6 +45,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Authenticates a user and returns a JWT bearer token with role claims.
     /// </summary>
+    /// <remarks>
+    /// For local development, you can use the seeded demo accounts from the application configuration. Copy the returned token into Swagger's Authorize dialog to test secured endpoints.
+    /// </remarks>
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
@@ -57,6 +64,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Returns the profile of the currently authenticated user.
     /// </summary>
+    /// <remarks>
+    /// Useful for verifying which identity and roles are currently attached to the bearer token in Swagger.
+    /// </remarks>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]

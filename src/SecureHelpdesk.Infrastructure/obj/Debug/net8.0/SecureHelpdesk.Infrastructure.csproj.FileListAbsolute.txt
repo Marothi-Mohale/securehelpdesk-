@@ -18,3 +18,4 @@ C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Infrastructure\obj\Debug\net8
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Infrastructure\obj\Debug\net8.0\SecureHelpdesk.Infrastructure.pdb
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Infrastructure\obj\Debug\net8.0\SecureHelpdesk.Infrastructure.genruntimeconfig.cache
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Infrastructure\obj\Debug\net8.0\ref\SecureHelpdesk.Infrastructure.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Infrastructure\bin\Debug\net8.0\SecureHelpdesk.Application.xml

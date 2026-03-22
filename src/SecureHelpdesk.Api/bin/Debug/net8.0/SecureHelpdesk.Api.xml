@@ -13,16 +13,25 @@
             <summary>
             Registers a new end user account and returns a bearer token for immediate use.
             </summary>
+            <remarks>
+            Use this endpoint to create a normal user account for the helpdesk system. The response includes a JWT so the new user can call secured endpoints immediately.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.AuthController.Login(SecureHelpdesk.Application.DTOs.Auth.LoginRequestDto,System.Threading.CancellationToken)">
             <summary>
             Authenticates a user and returns a JWT bearer token with role claims.
             </summary>
+            <remarks>
+            For local development, you can use the seeded demo accounts from the application configuration. Copy the returned token into Swagger's Authorize dialog to test secured endpoints.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.AuthController.GetCurrentUser(System.Threading.CancellationToken)">
             <summary>
             Returns the profile of the currently authenticated user.
             </summary>
+            <remarks>
+            Useful for verifying which identity and roles are currently attached to the bearer token in Swagger.
+            </remarks>
         </member>
         <member name="T:SecureHelpdesk.Api.Controllers.TicketsController">
             <summary>
@@ -33,36 +42,58 @@
             <summary>
             Returns a paginated list of tickets visible to the current user.
             </summary>
+            <remarks>
+            Supports pagination, keyword search, status filtering, priority filtering, creator filtering, assignee filtering, and sorting.
+            Regular users see only their own tickets, while agents and admins see a broader support view based on their role.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.GetTicket(System.Guid,System.Threading.CancellationToken)">
             <summary>
             Returns ticket details, including comments and audit history, if the current user has access.
             </summary>
+            <remarks>
+            This is the best endpoint for demonstrating the full helpdesk workflow because it includes the conversation timeline and audit trail.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.CreateTicket(SecureHelpdesk.Application.DTOs.Tickets.CreateTicketRequestDto,System.Threading.CancellationToken)">
             <summary>
             Creates a new helpdesk ticket for the current user.
             </summary>
+            <remarks>
+            Newly created tickets start in the <c>Open</c> status and automatically record an audit entry.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicket(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.UpdateTicketRequestDto,System.Threading.CancellationToken)">
             <summary>
             Updates editable ticket fields such as title, description, and priority.
             </summary>
+            <remarks>
+            Only Admins and the currently assigned Agent can update ticket details. Changes are captured in the audit history.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicketStatus(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.UpdateTicketStatusRequestDto,System.Threading.CancellationToken)">
             <summary>
             Updates a ticket's workflow status when the requested transition is allowed.
             </summary>
+            <remarks>
+            Valid transitions are enforced by the service layer to keep ticket workflows sensible and auditable.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicketAssignee(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.AssignTicketRequestDto,System.Threading.CancellationToken)">
             <summary>
             Assigns a ticket to an agent.
             </summary>
+            <remarks>
+            Only Admins can assign tickets. The assignee must be an existing user in the <c>Agent</c> role.
+            </remarks>
         </member>
         <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.AddComment(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.AddCommentRequestDto,System.Threading.CancellationToken)">
             <summary>
             Adds a comment to a ticket visible to the current user.
             </summary>
+            <remarks>
+            Comments are returned as their own resource and also appear in the ticket detail timeline.
+            </remarks>
         </member>
     </members>
 </doc>

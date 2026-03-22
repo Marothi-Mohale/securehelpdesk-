@@ -2,6 +2,9 @@ using SecureHelpdesk.Domain.Enums;
 
 namespace SecureHelpdesk.Application.DTOs.Tickets;
 
+/// <summary>
+/// Summary ticket response optimized for paginated list endpoints.
+/// </summary>
 public class TicketListResponseDto
 {
     public required Guid Id { get; init; }

@@ -1,5 +1,8 @@
 using System.Reflection;
 using Microsoft.OpenApi.Models;
+using SecureHelpdesk.Api.Swagger;
+using SecureHelpdesk.Application.DTOs.Auth;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SecureHelpdesk.Api.Configuration;
 
@@ -13,7 +16,7 @@ public static class SwaggerConfigurationExtensions
             {
                 Title = "Secure Helpdesk API",
                 Version = "v1",
-                Description = "Portfolio-ready helpdesk and ticketing API with JWT authentication, ticket workflows, and audit history."
+                Description = "Secure Helpdesk / Ticketing API for internal support workflows. Explore JWT authentication, role-based access, ticket lifecycle management, comments, audit history, filtering, pagination, and standardized error handling."
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -23,34 +26,40 @@ public static class SwaggerConfigurationExtensions
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Enter a valid JWT bearer token."
-            });
-
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
+                Description = "Paste a JWT access token here using the Bearer scheme. Obtain a token from `POST /api/auth/login` or `POST /api/auth/register` first."
             });
 
             options.SupportNonNullableReferenceTypes();
-
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            if (File.Exists(xmlPath))
+            options.CustomOperationIds(apiDescription =>
             {
-                options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
-            }
+                var controller = apiDescription.ActionDescriptor.RouteValues["controller"];
+                return $"{controller}_{apiDescription.HttpMethod}_{apiDescription.RelativePath}"
+                    .Replace("/", "_")
+                    .Replace("{", string.Empty)
+                    .Replace("}", string.Empty)
+                    .Replace(":", "_");
+            });
+            options.OrderActionsBy(apiDescription =>
+                $"{apiDescription.ActionDescriptor.RouteValues["controller"]}_{apiDescription.HttpMethod}_{apiDescription.RelativePath}");
+
+            options.OperationFilter<AuthorizeOperationFilter>();
+            options.SchemaFilter<ExampleSchemaFilter>();
+            options.DocumentFilter<TagDescriptionsDocumentFilter>();
+
+            IncludeXmlComments(options, Assembly.GetExecutingAssembly());
+            IncludeXmlComments(options, typeof(RegisterRequestDto).Assembly);
         });
 
         return services;
+    }
+
+    private static void IncludeXmlComments(SwaggerGenOptions options, Assembly assembly)
+    {
+        var xmlFile = $"{assembly.GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+        }
     }
 }
