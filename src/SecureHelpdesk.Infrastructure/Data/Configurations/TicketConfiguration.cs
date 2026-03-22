@@ -19,11 +19,16 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .IsRequired();
 
         entity.Property(t => t.CreatedAtUtc).IsRequired();
+        entity.Property(t => t.UpdatedAtUtc).IsRequired(false);
+
         entity.HasIndex(t => t.Status);
         entity.HasIndex(t => t.Priority);
         entity.HasIndex(t => t.AssignedToUserId);
         entity.HasIndex(t => t.CreatedByUserId);
+        entity.HasIndex(t => t.CreatedAtUtc);
         entity.HasIndex(t => new { t.Status, t.Priority, t.AssignedToUserId });
+        entity.HasIndex(t => new { t.CreatedByUserId, t.CreatedAtUtc });
+        entity.HasIndex(t => new { t.AssignedToUserId, t.Status, t.CreatedAtUtc });
 
         entity.HasOne(t => t.CreatedByUser)
             .WithMany(u => u.CreatedTickets)

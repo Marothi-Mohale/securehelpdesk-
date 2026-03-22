@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SecureHelpdesk.Domain.Entities;
-using SecureHelpdesk.Infrastructure.Data.Configurations;
 
 namespace SecureHelpdesk.Infrastructure.Data;
 
@@ -18,8 +17,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        builder.ApplyConfiguration(new TicketConfiguration());
-        builder.ApplyConfiguration(new TicketCommentConfiguration());
-        builder.ApplyConfiguration(new TicketAuditLogConfiguration());
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

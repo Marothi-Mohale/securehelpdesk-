@@ -14,8 +14,11 @@ public class TicketCommentConfiguration : IEntityTypeConfiguration<TicketComment
             .HasMaxLength(1000)
             .IsRequired();
 
+        entity.Property(c => c.AuthorUserId).IsRequired();
         entity.Property(c => c.CreatedAtUtc).IsRequired();
         entity.HasIndex(c => c.TicketId);
+        entity.HasIndex(c => new { c.TicketId, c.CreatedAtUtc });
+        entity.HasIndex(c => c.AuthorUserId);
 
         entity.HasOne(c => c.Ticket)
             .WithMany(t => t.Comments)
