@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SecureHelpdesk.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc044078c98fb12f9787a0e68dd9a3b94bb15779")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+581eaf206dc3ad983b1bad43a95ecf0d48cdf640")]
 [assembly: System.Reflection.AssemblyProductAttribute("SecureHelpdesk.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SecureHelpdesk.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
