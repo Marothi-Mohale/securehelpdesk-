@@ -249,7 +249,7 @@ public class TicketService : ITicketService
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
-    public async Task<TicketResponseDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<CommentResponseDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
         using var scope = _logger.BeginScope(new Dictionary<string, object?>
         {
@@ -261,12 +261,14 @@ public class TicketService : ITicketService
         EnsureCanViewTicket(ticket, userContext);
         var commentContent = request.Content.Trim();
 
-        await _ticketRepository.AddCommentAsync(new TicketComment
+        var comment = new TicketComment
         {
             TicketId = ticket.Id,
             AuthorUserId = userContext.UserId,
             Content = commentContent
-        }, cancellationToken);
+        };
+
+        await _ticketRepository.AddCommentAsync(comment, cancellationToken);
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
         await _ticketRepository.AddAuditLogAsync(
@@ -275,9 +277,11 @@ public class TicketService : ITicketService
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
+        var authorName = await _userDirectoryService.GetUserDisplayNameAsync(userContext.UserId, cancellationToken);
+
         _logger.LogInformation("Comment added to ticket with content length {CommentLength}", commentContent.Length);
 
-        return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
+        return comment.ToResponseDto(authorName);
     }
 
     private IQueryable<Ticket> BuildScopedQuery(UserContext userContext)
@@ -351,9 +355,9 @@ public class TicketService : ITicketService
             query = query.Where(t => t.Priority == queryParameters.Priority.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(queryParameters.AssigneeId))
+        if (!string.IsNullOrWhiteSpace(queryParameters.AssignedToUserId))
         {
-            query = query.Where(t => t.AssignedToUserId == queryParameters.AssigneeId);
+            query = query.Where(t => t.AssignedToUserId == queryParameters.AssignedToUserId);
         }
 
         if (!string.IsNullOrWhiteSpace(queryParameters.CreatedByUserId))

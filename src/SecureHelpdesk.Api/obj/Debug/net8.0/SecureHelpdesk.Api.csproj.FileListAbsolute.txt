@@ -81,3 +81,5 @@ C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\obj\Debug\net8.0\refint\S
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\obj\Debug\net8.0\SecureHelpdesk.Api.pdb
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\obj\Debug\net8.0\SecureHelpdesk.Api.genruntimeconfig.cache
 C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\obj\Debug\net8.0\ref\SecureHelpdesk.Api.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\bin\Debug\net8.0\SecureHelpdesk.Api.xml
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Api\obj\Debug\net8.0\SecureHelpdesk.Api.xml

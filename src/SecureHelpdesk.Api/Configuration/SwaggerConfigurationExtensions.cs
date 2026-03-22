@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.OpenApi.Models;
 
 namespace SecureHelpdesk.Api.Configuration;
@@ -39,6 +40,15 @@ public static class SwaggerConfigurationExtensions
                     Array.Empty<string>()
                 }
             });
+
+            options.SupportNonNullableReferenceTypes();
+
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+            }
         });
 
         return services;

@@ -111,6 +111,9 @@ public class TicketServiceTests
     {
         await using var dbContext = CreateDbContext();
         var ticket = await SeedTicketAsync(dbContext, "user-1");
+        _userDirectoryService
+            .Setup(service => service.GetUserDisplayNameAsync("user-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("User user-1");
 
         var service = CreateService(dbContext);
         var context = new UserContext("user-1", "user1@test.local", [RoleNames.User]);
@@ -121,8 +124,17 @@ public class TicketServiceTests
             context,
             CancellationToken.None);
 
-        Assert.Single(result.Comments);
-        Assert.Contains(result.AuditLogs, log => log.ActionType == AuditActionType.CommentAdded);
+        Assert.Equal("Need help with this issue.", result.Content);
+        Assert.Equal("user-1", result.AuthorUserId);
+        Assert.Equal("User user-1", result.AuthorName);
+
+        var reloadedTicket = await dbContext.Tickets
+            .Include(t => t.AuditLogs)
+            .Include(t => t.Comments)
+            .SingleAsync(t => t.Id == ticket.Id);
+
+        Assert.Single(reloadedTicket.Comments);
+        Assert.Contains(reloadedTicket.AuditLogs, log => log.ActionType == AuditActionType.CommentAdded);
     }
 
     private TicketService CreateService(ApplicationDbContext dbContext)

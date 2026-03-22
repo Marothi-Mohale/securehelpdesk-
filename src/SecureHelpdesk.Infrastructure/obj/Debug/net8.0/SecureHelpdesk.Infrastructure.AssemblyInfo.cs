@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SecureHelpdesk.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+89c32d18c49dc9142ccb1719d9389d477514f12e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c608d8ac0d50514965eba2834a288ff600d121df")]
 [assembly: System.Reflection.AssemblyProductAttribute("SecureHelpdesk.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SecureHelpdesk.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

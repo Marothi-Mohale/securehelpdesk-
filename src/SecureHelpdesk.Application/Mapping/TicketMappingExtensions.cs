@@ -5,6 +5,18 @@ namespace SecureHelpdesk.Application.Mapping;
 
 public static class TicketMappingExtensions
 {
+    public static CommentResponseDto ToResponseDto(this TicketComment comment, string authorName)
+    {
+        return new CommentResponseDto
+        {
+            Id = comment.Id,
+            Content = comment.Content,
+            CreatedAtUtc = comment.CreatedAtUtc,
+            AuthorUserId = comment.AuthorUserId,
+            AuthorName = authorName
+        };
+    }
+
     public static TicketResponseDto ToResponseDto(this Ticket ticket)
     {
         return new TicketResponseDto
@@ -22,14 +34,7 @@ public static class TicketMappingExtensions
             AssignedToName = ticket.AssignedToUser?.FullName,
             Comments = ticket.Comments
                 .OrderBy(c => c.CreatedAtUtc)
-                .Select(c => new CommentResponseDto
-                {
-                    Id = c.Id,
-                    Content = c.Content,
-                    CreatedAtUtc = c.CreatedAtUtc,
-                    AuthorUserId = c.AuthorUserId,
-                    AuthorName = c.AuthorUser.FullName
-                })
+                .Select(c => c.ToResponseDto(c.AuthorUser.FullName))
                 .ToList(),
             AuditLogs = ticket.AuditLogs
                 .OrderByDescending(a => a.ChangedAtUtc)

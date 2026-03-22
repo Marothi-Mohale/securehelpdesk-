@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SecureHelpdesk.Api</name>
+    </assembly>
+    <members>
+        <member name="T:SecureHelpdesk.Api.Controllers.AuthController">
+            <summary>
+            Handles user registration, login, and the current authenticated user profile.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.AuthController.Register(SecureHelpdesk.Application.DTOs.Auth.RegisterRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Registers a new end user account and returns a bearer token for immediate use.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.AuthController.Login(SecureHelpdesk.Application.DTOs.Auth.LoginRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Authenticates a user and returns a JWT bearer token with role claims.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.AuthController.GetCurrentUser(System.Threading.CancellationToken)">
+            <summary>
+            Returns the profile of the currently authenticated user.
+            </summary>
+        </member>
+        <member name="T:SecureHelpdesk.Api.Controllers.TicketsController">
+            <summary>
+            Manages ticket creation, ticket workflows, assignment, and discussion.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.GetTickets(SecureHelpdesk.Application.DTOs.Tickets.TicketListQueryRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Returns a paginated list of tickets visible to the current user.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.GetTicket(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Returns ticket details, including comments and audit history, if the current user has access.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.CreateTicket(SecureHelpdesk.Application.DTOs.Tickets.CreateTicketRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new helpdesk ticket for the current user.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicket(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.UpdateTicketRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Updates editable ticket fields such as title, description, and priority.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicketStatus(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.UpdateTicketStatusRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Updates a ticket's workflow status when the requested transition is allowed.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.UpdateTicketAssignee(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.AssignTicketRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Assigns a ticket to an agent.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.TicketsController.AddComment(System.Guid,SecureHelpdesk.Application.DTOs.Tickets.AddCommentRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Adds a comment to a ticket visible to the current user.
+            </summary>
+        </member>
+    </members>
+</doc>

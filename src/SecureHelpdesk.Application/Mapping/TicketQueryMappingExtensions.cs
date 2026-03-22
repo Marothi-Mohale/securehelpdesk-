@@ -12,7 +12,7 @@ public static class TicketQueryMappingExtensions
             Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim(),
             Status = request.Status,
             Priority = request.Priority,
-            AssigneeId = request.AssignedToUserId,
+            AssignedToUserId = request.AssignedToUserId,
             CreatedByUserId = request.CreatedByUserId,
             SortBy = request.SortBy,
             SortDirection = request.SortDirection,

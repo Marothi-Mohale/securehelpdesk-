@@ -98,6 +98,18 @@ public class AuthService : IAuthService
         return await CreateResponseAsync(user);
     }
 
+    public async Task<UserProfileDto> GetCurrentUserProfileAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            throw new ApiException("Authenticated user account was not found.", StatusCodes.Status404NotFound);
+        }
+
+        var roles = (await _userManager.GetRolesAsync(user)).ToArray();
+        return user.ToUserProfileDto(roles);
+    }
+
     private async Task<AuthResponseDto> CreateResponseAsync(ApplicationUser user)
     {
         var roles = (await _userManager.GetRolesAsync(user)).ToArray();
