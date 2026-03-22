@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
+using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Application.Services;
 using SecureHelpdesk.Domain.Entities;
@@ -66,6 +68,34 @@ public static class InfrastructureServiceCollectionExtensions
             {
                 options.RequireHttpsMetadata = true;
                 options.SaveToken = false;
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = async context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.ContentType = "application/json";
+
+                        var payload = ApiErrorResponseFactory.Create(
+                            context.HttpContext,
+                            StatusCodes.Status401Unauthorized,
+                            "Authentication is required to access this resource.");
+
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+                    },
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/json";
+
+                        var payload = ApiErrorResponseFactory.Create(
+                            context.HttpContext,
+                            StatusCodes.Status403Forbidden,
+                            "You do not have permission to access this resource.");
+
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+                    }
+                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

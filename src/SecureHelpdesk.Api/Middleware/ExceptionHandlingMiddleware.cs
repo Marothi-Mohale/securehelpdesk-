@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using SecureHelpdesk.Application.Common;
+using SecureHelpdesk.Application.DTOs.Common;
 
 namespace SecureHelpdesk.Api.Middleware;
 
@@ -24,26 +24,54 @@ public class ExceptionHandlingMiddleware
         catch (ApiException exception)
         {
             _logger.LogWarning(exception, "Handled application exception");
-            await WriteProblemDetailsAsync(context, exception.StatusCode, exception.Message);
+            await WriteErrorResponseAsync(
+                context,
+                exception.StatusCode,
+                exception.Message,
+                exception.ErrorCode,
+                exception.Title,
+                exception.Errors);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            _logger.LogWarning(exception, "Unauthorized access exception");
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status401Unauthorized,
+                "Authentication is required to access this resource.");
+        }
+        catch (BadHttpRequestException exception)
+        {
+            _logger.LogWarning(exception, "Bad HTTP request");
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status400BadRequest,
+                exception.Message);
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled exception");
-            await WriteProblemDetailsAsync(context, StatusCodes.Status500InternalServerError, "An unexpected server error occurred.");
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status500InternalServerError,
+                "An unexpected server error occurred.");
         }
     }
 
-    private static async Task WriteProblemDetailsAsync(HttpContext context, int statusCode, string detail)
+    private static async Task WriteErrorResponseAsync(
+        HttpContext context,
+        int statusCode,
+        string detail,
+        string? errorCode = null,
+        string? title = null,
+        IReadOnlyDictionary<string, string[]>? errors = null)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = statusCode;
 
-        var payload = new ProblemDetails
-        {
-            Status = statusCode,
-            Title = statusCode >= 500 ? "Server error" : "Request failed",
-            Detail = detail
-        };
+        object payload = errors is not null
+            ? ApiErrorResponseFactory.CreateValidation(context, errors, detail)
+            : ApiErrorResponseFactory.Create(context, statusCode, detail, errorCode, title);
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
     }

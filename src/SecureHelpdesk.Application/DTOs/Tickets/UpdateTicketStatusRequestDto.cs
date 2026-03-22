@@ -5,6 +5,6 @@ namespace SecureHelpdesk.Application.DTOs.Tickets;
 
 public class UpdateTicketStatusRequestDto
 {
-    [EnumDataType(typeof(TicketStatus))]
+    [EnumDataType(typeof(TicketStatus), ErrorMessage = "Status must be a valid ticket status.")]
     public TicketStatus Status { get; init; }
 }

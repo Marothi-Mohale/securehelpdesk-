@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SecureHelpdesk.Application.Common;
 
 namespace SecureHelpdesk.Api.Configuration;
 
@@ -14,14 +15,11 @@ public static class ApiServiceCollectionExtensions
                 var errors = context.ModelState
                     .Where(entry => entry.Value?.Errors.Count > 0)
                     .ToDictionary(
-                        entry => entry.Key,
+                        entry => string.IsNullOrWhiteSpace(entry.Key) ? "$" : entry.Key,
                         entry => entry.Value!.Errors.Select(error => error.ErrorMessage).ToArray());
 
-                return new BadRequestObjectResult(new
-                {
-                    message = "Validation failed.",
-                    errors
-                });
+                var payload = ApiErrorResponseFactory.CreateValidation(context.HttpContext, errors);
+                return new BadRequestObjectResult(payload);
             };
         });
 

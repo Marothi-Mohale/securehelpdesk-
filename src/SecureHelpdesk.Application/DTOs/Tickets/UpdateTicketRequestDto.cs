@@ -5,12 +5,12 @@ namespace SecureHelpdesk.Application.DTOs.Tickets;
 
 public class UpdateTicketRequestDto
 {
-    [StringLength(200, MinimumLength = 5)]
+    [StringLength(200, MinimumLength = 5, ErrorMessage = "Title must be between 5 and 200 characters.")]
     public string? Title { get; init; }
 
-    [StringLength(4000, MinimumLength = 10)]
+    [StringLength(4000, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 4000 characters.")]
     public string? Description { get; init; }
 
-    [EnumDataType(typeof(TicketPriority))]
+    [EnumDataType(typeof(TicketPriority), ErrorMessage = "Priority must be a valid ticket priority.")]
     public TicketPriority? Priority { get; init; }
 }
