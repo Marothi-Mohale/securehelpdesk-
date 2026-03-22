@@ -15,15 +15,18 @@ namespace SecureHelpdesk.Application.Services;
 
 public class TicketService : ITicketService
 {
+    private readonly ITicketAuditService _ticketAuditService;
     private readonly ITicketRepository _ticketRepository;
     private readonly IUserDirectoryService _userDirectoryService;
     private readonly ILogger<TicketService> _logger;
 
     public TicketService(
+        ITicketAuditService ticketAuditService,
         ITicketRepository ticketRepository,
         IUserDirectoryService userDirectoryService,
         ILogger<TicketService> logger)
     {
+        _ticketAuditService = ticketAuditService;
         _ticketRepository = ticketRepository;
         _userDirectoryService = userDirectoryService;
         _logger = logger;
@@ -40,13 +43,7 @@ public class TicketService : ITicketService
             CreatedByUserId = userContext.UserId
         };
 
-        ticket.AuditLogs.Add(new TicketAuditLog
-        {
-            TicketId = ticket.Id,
-            ChangedByUserId = userContext.UserId,
-            ActionType = AuditActionType.TicketCreated,
-            NewValue = TicketStatus.Open.ToString()
-        });
+        _ticketAuditService.RecordTicketCreated(ticket, userContext.UserId);
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
         await _ticketRepository.SaveChangesAsync(cancellationToken);
@@ -152,15 +149,7 @@ public class TicketService : ITicketService
 
         if (request.Priority.HasValue && ticket.Priority != request.Priority.Value)
         {
-            ticket.AuditLogs.Add(new TicketAuditLog
-            {
-                TicketId = ticket.Id,
-                ChangedByUserId = userContext.UserId,
-                ActionType = AuditActionType.PriorityChanged,
-                OldValue = ticket.Priority.ToString(),
-                NewValue = request.Priority.Value.ToString()
-            });
-
+            _ticketAuditService.RecordPriorityChanged(ticket, userContext.UserId, ticket.Priority, request.Priority.Value);
             updates.Add("Priority updated");
             ticket.Priority = request.Priority.Value;
         }
@@ -171,13 +160,7 @@ public class TicketService : ITicketService
         }
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        ticket.AuditLogs.Add(new TicketAuditLog
-        {
-            TicketId = ticket.Id,
-            ChangedByUserId = userContext.UserId,
-            ActionType = AuditActionType.TicketUpdated,
-            NewValue = string.Join("; ", updates)
-        });
+        _ticketAuditService.RecordTicketUpdated(ticket, userContext.UserId, updates);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -201,14 +184,7 @@ public class TicketService : ITicketService
 
         ticket.Status = request.Status;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        ticket.AuditLogs.Add(new TicketAuditLog
-        {
-            TicketId = ticket.Id,
-            ChangedByUserId = userContext.UserId,
-            ActionType = AuditActionType.StatusChanged,
-            OldValue = previousStatus.ToString(),
-            NewValue = request.Status.ToString()
-        });
+        _ticketAuditService.RecordStatusChanged(ticket, userContext.UserId, previousStatus, request.Status);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -244,17 +220,14 @@ public class TicketService : ITicketService
             throw new ApiException("Ticket is already assigned to the selected agent.", StatusCodes.Status400BadRequest);
         }
 
+        var previousAssigneeLabel = await ResolveAssigneeLabelAsync(previousAssigneeUserId, cancellationToken);
+        var newAssigneeLabel = await ResolveAssigneeLabelAsync(request.AgentUserId, cancellationToken)
+            ?? request.AgentUserId;
+
         ticket.AssignedToUserId = request.AgentUserId;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
 
-        ticket.AuditLogs.Add(new TicketAuditLog
-        {
-            TicketId = ticket.Id,
-            ChangedByUserId = userContext.UserId,
-            ActionType = AuditActionType.AgentAssigned,
-            OldValue = previousAssigneeUserId,
-            NewValue = request.AgentUserId
-        });
+        _ticketAuditService.RecordAssignmentChanged(ticket, userContext.UserId, previousAssigneeLabel, newAssigneeLabel);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -267,22 +240,17 @@ public class TicketService : ITicketService
     {
         var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
         EnsureCanViewTicket(ticket, userContext);
+        var commentContent = request.Content.Trim();
 
         ticket.Comments.Add(new TicketComment
         {
             TicketId = ticket.Id,
             AuthorUserId = userContext.UserId,
-            Content = request.Content.Trim()
+            Content = commentContent
         });
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        ticket.AuditLogs.Add(new TicketAuditLog
-        {
-            TicketId = ticket.Id,
-            ChangedByUserId = userContext.UserId,
-            ActionType = AuditActionType.CommentAdded,
-            NewValue = "Comment added"
-        });
+        _ticketAuditService.RecordCommentAdded(ticket, userContext.UserId, commentContent);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -318,6 +286,17 @@ public class TicketService : ITicketService
         }
 
         return ticket;
+    }
+
+    private async Task<string?> ResolveAssigneeLabelAsync(string? userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return null;
+        }
+
+        var displayName = await _userDirectoryService.GetUserDisplayNameAsync(userId, cancellationToken);
+        return $"{displayName} ({userId})";
     }
 
     private static IQueryable<Ticket> ApplySorting(IQueryable<Ticket> query, TicketQueryParameters queryParameters)

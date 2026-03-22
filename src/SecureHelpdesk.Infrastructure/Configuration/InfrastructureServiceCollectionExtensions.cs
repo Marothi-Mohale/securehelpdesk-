@@ -86,6 +86,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddAuthorizationBuilder();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITicketAuditService, TicketAuditService>();
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IUserDirectoryService, UserDirectoryService>();

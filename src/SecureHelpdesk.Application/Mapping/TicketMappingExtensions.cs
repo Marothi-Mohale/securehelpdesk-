@@ -70,10 +70,10 @@ public static class TicketMappingExtensions
     {
         return auditLog.ActionType switch
         {
-            Domain.Enums.AuditActionType.TicketCreated => "Ticket created",
+            Domain.Enums.AuditActionType.TicketCreated => $"Ticket created with {auditLog.NewValue}",
             Domain.Enums.AuditActionType.StatusChanged => $"Status changed from {auditLog.OldValue} to {auditLog.NewValue}",
             Domain.Enums.AuditActionType.AgentAssigned => $"Assigned agent changed from {auditLog.OldValue ?? "unassigned"} to {auditLog.NewValue ?? "unassigned"}",
-            Domain.Enums.AuditActionType.CommentAdded => "Comment added",
+            Domain.Enums.AuditActionType.CommentAdded => $"Comment added: {auditLog.NewValue}",
             Domain.Enums.AuditActionType.PriorityChanged => $"Priority changed from {auditLog.OldValue} to {auditLog.NewValue}",
             Domain.Enums.AuditActionType.TicketUpdated => auditLog.NewValue ?? "Ticket details updated",
             _ => auditLog.ActionType.ToString()

@@ -19,6 +19,7 @@ public class TicketServiceTests
 {
     private readonly Mock<IUserDirectoryService> _userDirectoryService = new();
     private readonly Mock<ILogger<TicketService>> _logger = new();
+    private readonly ITicketAuditService _ticketAuditService = new TicketAuditService();
 
     [Fact]
     public async Task AssignTicketAsync_Throws_When_Assignee_Is_Not_Agent()
@@ -104,9 +105,28 @@ public class TicketServiceTests
         Assert.Equal(403, exception.StatusCode);
     }
 
+    [Fact]
+    public async Task AddCommentAsync_Adds_Comment_And_Audit_Log_For_Authorized_User()
+    {
+        await using var dbContext = CreateDbContext();
+        var ticket = await SeedTicketAsync(dbContext, "user-1");
+
+        var service = CreateService(dbContext);
+        var context = new UserContext("user-1", "user1@test.local", [RoleNames.User]);
+
+        var result = await service.AddCommentAsync(
+            ticket.Id,
+            new AddCommentRequestDto { Content = "Need help with this issue." },
+            context,
+            CancellationToken.None);
+
+        Assert.Single(result.Comments);
+        Assert.Contains(result.AuditLogs, log => log.ActionType == AuditActionType.CommentAdded);
+    }
+
     private TicketService CreateService(ApplicationDbContext dbContext)
     {
-        return new TicketService(new TicketRepository(dbContext), _userDirectoryService.Object, _logger.Object);
+        return new TicketService(_ticketAuditService, new TicketRepository(dbContext), _userDirectoryService.Object, _logger.Object);
     }
 
     private static async Task<Ticket> SeedTicketAsync(ApplicationDbContext dbContext, string createdByUserId)
