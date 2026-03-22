@@ -6,5 +6,6 @@ public enum AuditActionType
     StatusChanged = 2,
     AgentAssigned = 3,
     CommentAdded = 4,
-    PriorityChanged = 5
+    PriorityChanged = 5,
+    TicketUpdated = 6
 }

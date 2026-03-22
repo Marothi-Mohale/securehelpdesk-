@@ -11,6 +11,9 @@ public class TicketQueryParameters
     public TicketStatus? Status { get; init; }
     public TicketPriority? Priority { get; init; }
     public string? AssigneeId { get; init; }
+    public string? CreatedByUserId { get; init; }
+    public TicketSortBy SortBy { get; init; } = TicketSortBy.CreatedAt;
+    public SortDirection SortDirection { get; init; } = SortDirection.Desc;
     public int PageNumber
     {
         get => _pageNumber;

@@ -1,6 +1,7 @@
 using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Domain.Entities;
 using SecureHelpdesk.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace SecureHelpdesk.Infrastructure.Repositories;
 
@@ -18,9 +19,26 @@ public class TicketRepository : ITicketRepository
         return _dbContext.Tickets.AddAsync(ticket, cancellationToken).AsTask();
     }
 
-    public IQueryable<Ticket> Query()
+    public IQueryable<Ticket> QueryForList()
     {
-        return _dbContext.Tickets.AsQueryable();
+        return _dbContext.Tickets
+            .AsNoTracking()
+            .Include(t => t.CreatedByUser)
+            .Include(t => t.AssignedToUser)
+            .Include(t => t.Comments)
+            .AsQueryable();
+    }
+
+    public Task<Ticket?> GetByIdWithDetailsAsync(Guid ticketId, CancellationToken cancellationToken)
+    {
+        return _dbContext.Tickets
+            .Include(t => t.CreatedByUser)
+            .Include(t => t.AssignedToUser)
+            .Include(t => t.Comments)
+                .ThenInclude(c => c.AuthorUser)
+            .Include(t => t.AuditLogs)
+                .ThenInclude(a => a.ChangedByUser)
+            .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

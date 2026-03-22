@@ -75,9 +75,15 @@ public class TicketService : ITicketService
             query = query.Where(t => t.AssignedToUserId == queryParameters.AssigneeId);
         }
 
+        if (!string.IsNullOrWhiteSpace(queryParameters.CreatedByUserId))
+        {
+            query = query.Where(t => t.CreatedByUserId == queryParameters.CreatedByUserId);
+        }
+
+        query = ApplySorting(query, queryParameters);
+
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
-            .OrderByDescending(t => t.CreatedAtUtc)
             .Skip((queryParameters.PageNumber - 1) * queryParameters.PageSize)
             .Take(queryParameters.PageSize)
             .Select(t => new TicketListResponseDto
@@ -107,35 +113,91 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> GetTicketByIdAsync(Guid ticketId, UserContext userContext, CancellationToken cancellationToken)
     {
-        var ticket = await _ticketRepository.Query()
-            .Include(t => t.CreatedByUser)
-            .Include(t => t.AssignedToUser)
-            .Include(t => t.Comments)
-                .ThenInclude(c => c.AuthorUser)
-            .Include(t => t.AuditLogs)
-                .ThenInclude(a => a.ChangedByUser)
-            .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
+        EnsureCanViewTicket(ticket, userContext);
+        return ticket.ToResponseDto();
+    }
 
-        if (ticket is null)
+    public async Task<TicketResponseDto> UpdateTicketAsync(Guid ticketId, UpdateTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    {
+        if (request.Title is null && request.Description is null && request.Priority is null)
         {
-            throw new ApiException("Ticket was not found.", StatusCodes.Status404NotFound);
+            throw new ApiException("At least one editable field must be provided.", StatusCodes.Status400BadRequest);
         }
 
-        EnsureTicketAccess(ticket, userContext);
-        return ticket.ToResponseDto();
+        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
+        EnsureCanManageTicket(ticket, userContext);
+
+        var updates = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(request.Title))
+        {
+            var newTitle = request.Title.Trim();
+            if (!string.Equals(ticket.Title, newTitle, StringComparison.Ordinal))
+            {
+                updates.Add("Title updated");
+                ticket.Title = newTitle;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Description))
+        {
+            var newDescription = request.Description.Trim();
+            if (!string.Equals(ticket.Description, newDescription, StringComparison.Ordinal))
+            {
+                updates.Add("Description updated");
+                ticket.Description = newDescription;
+            }
+        }
+
+        if (request.Priority.HasValue && ticket.Priority != request.Priority.Value)
+        {
+            ticket.AuditLogs.Add(new TicketAuditLog
+            {
+                TicketId = ticket.Id,
+                ChangedByUserId = userContext.UserId,
+                ActionType = AuditActionType.PriorityChanged,
+                OldValue = ticket.Priority.ToString(),
+                NewValue = request.Priority.Value.ToString()
+            });
+
+            updates.Add("Priority updated");
+            ticket.Priority = request.Priority.Value;
+        }
+
+        if (updates.Count == 0)
+        {
+            throw new ApiException("No changes were detected.", StatusCodes.Status400BadRequest);
+        }
+
+        ticket.UpdatedAtUtc = DateTime.UtcNow;
+        ticket.AuditLogs.Add(new TicketAuditLog
+        {
+            TicketId = ticket.Id,
+            ChangedByUserId = userContext.UserId,
+            ActionType = AuditActionType.TicketUpdated,
+            NewValue = string.Join("; ", updates)
+        });
+
+        await _ticketRepository.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Ticket {TicketId} details updated by user {UserId}", ticket.Id, userContext.UserId);
+
+        return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
     public async Task<TicketResponseDto> UpdateStatusAsync(Guid ticketId, UpdateTicketStatusRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
-        EnsureSupportRole(userContext);
-
-        var ticket = await GetTrackedTicketAsync(ticketId, cancellationToken);
+        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
+        EnsureCanManageTicket(ticket, userContext);
         var previousStatus = ticket.Status;
 
         if (previousStatus == request.Status)
         {
             throw new ApiException("Ticket already has the requested status.", StatusCodes.Status400BadRequest);
         }
+
+        EnsureValidStatusTransition(previousStatus, request.Status);
 
         ticket.Status = request.Status;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
@@ -162,7 +224,7 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> AssignTicketAsync(Guid ticketId, AssignTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
-        EnsureSupportRole(userContext);
+        EnsureAdminRole(userContext);
 
         if (!await _userDirectoryService.UserExistsAsync(request.AgentUserId, cancellationToken))
         {
@@ -174,8 +236,14 @@ public class TicketService : ITicketService
             throw new ApiException("The selected assignee is not an agent.", StatusCodes.Status400BadRequest);
         }
 
-        var ticket = await GetTrackedTicketAsync(ticketId, cancellationToken);
+        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
         var previousAssigneeUserId = ticket.AssignedToUserId;
+
+        if (string.Equals(previousAssigneeUserId, request.AgentUserId, StringComparison.Ordinal))
+        {
+            throw new ApiException("Ticket is already assigned to the selected agent.", StatusCodes.Status400BadRequest);
+        }
+
         ticket.AssignedToUserId = request.AgentUserId;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -197,8 +265,8 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
-        var ticket = await GetTrackedTicketAsync(ticketId, cancellationToken);
-        EnsureTicketAccess(ticket, userContext);
+        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
+        EnsureCanViewTicket(ticket, userContext);
 
         ticket.Comments.Add(new TicketComment
         {
@@ -225,30 +293,24 @@ public class TicketService : ITicketService
 
     private IQueryable<Ticket> BuildScopedQuery(UserContext userContext)
     {
-        var query = _ticketRepository.Query()
-            .Include(t => t.CreatedByUser)
-            .Include(t => t.AssignedToUser)
-            .Include(t => t.Comments)
-            .AsQueryable();
+        var query = _ticketRepository.QueryForList();
 
-        if (userContext.IsAdmin || userContext.IsAgent)
+        if (userContext.IsAdmin)
         {
             return query;
+        }
+
+        if (userContext.IsAgent)
+        {
+            return query.Where(t => t.AssignedToUserId == userContext.UserId || t.CreatedByUserId == userContext.UserId);
         }
 
         return query.Where(t => t.CreatedByUserId == userContext.UserId);
     }
 
-    private async Task<Ticket> GetTrackedTicketAsync(Guid ticketId, CancellationToken cancellationToken)
+    private async Task<Ticket> GetRequiredTicketAsync(Guid ticketId, CancellationToken cancellationToken)
     {
-        var ticket = await _ticketRepository.Query()
-            .Include(t => t.CreatedByUser)
-            .Include(t => t.AssignedToUser)
-            .Include(t => t.Comments)
-                .ThenInclude(c => c.AuthorUser)
-            .Include(t => t.AuditLogs)
-                .ThenInclude(a => a.ChangedByUser)
-            .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+        var ticket = await _ticketRepository.GetByIdWithDetailsAsync(ticketId, cancellationToken);
 
         if (ticket is null)
         {
@@ -258,25 +320,79 @@ public class TicketService : ITicketService
         return ticket;
     }
 
-    private static void EnsureSupportRole(UserContext userContext)
+    private static IQueryable<Ticket> ApplySorting(IQueryable<Ticket> query, TicketQueryParameters queryParameters)
     {
-        if (!userContext.IsAdmin && !userContext.IsAgent)
+        return (queryParameters.SortBy, queryParameters.SortDirection) switch
+        {
+            (TicketSortBy.UpdatedAt, SortDirection.Asc) => query.OrderBy(t => t.UpdatedAtUtc ?? t.CreatedAtUtc).ThenBy(t => t.CreatedAtUtc),
+            (TicketSortBy.UpdatedAt, SortDirection.Desc) => query.OrderByDescending(t => t.UpdatedAtUtc ?? t.CreatedAtUtc).ThenByDescending(t => t.CreatedAtUtc),
+            (TicketSortBy.CreatedAt, SortDirection.Asc) => query.OrderBy(t => t.CreatedAtUtc),
+            _ => query.OrderByDescending(t => t.CreatedAtUtc)
+        };
+    }
+
+    private static void EnsureCanViewTicket(Ticket ticket, UserContext userContext)
+    {
+        if (userContext.IsAdmin)
+        {
+            return;
+        }
+
+        if (userContext.IsAgent)
+        {
+            if (string.Equals(ticket.AssignedToUserId, userContext.UserId, StringComparison.Ordinal)
+                || string.Equals(ticket.CreatedByUserId, userContext.UserId, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+        else if (string.Equals(ticket.CreatedByUserId, userContext.UserId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new ApiException("You are not allowed to access this ticket.", StatusCodes.Status403Forbidden);
+    }
+
+    private static void EnsureCanManageTicket(Ticket ticket, UserContext userContext)
+    {
+        if (userContext.IsAdmin)
+        {
+            return;
+        }
+
+        if (userContext.IsAgent && string.Equals(ticket.AssignedToUserId, userContext.UserId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new ApiException("You are not allowed to manage this ticket.", StatusCodes.Status403Forbidden);
+    }
+
+    private static void EnsureAdminRole(UserContext userContext)
+    {
+        if (!userContext.IsAdmin)
         {
             throw new ApiException("You are not allowed to perform this action.", StatusCodes.Status403Forbidden);
         }
     }
 
-    private static void EnsureTicketAccess(Ticket ticket, UserContext userContext)
+    private static void EnsureValidStatusTransition(TicketStatus currentStatus, TicketStatus newStatus)
     {
-        if (userContext.IsAdmin || userContext.IsAgent)
+        var allowed = currentStatus switch
         {
-            return;
-        }
+            TicketStatus.Open => [TicketStatus.InProgress, TicketStatus.Closed],
+            TicketStatus.InProgress => [TicketStatus.Resolved, TicketStatus.Closed],
+            TicketStatus.Resolved => [TicketStatus.Closed, TicketStatus.InProgress],
+            TicketStatus.Closed => [TicketStatus.InProgress],
+            _ => []
+        };
 
-        if (!string.Equals(ticket.CreatedByUserId, userContext.UserId, StringComparison.Ordinal))
+        if (!allowed.Contains(newStatus))
         {
-            throw new ApiException("You are not allowed to access this ticket.", StatusCodes.Status403Forbidden);
+            throw new ApiException(
+                $"Status transition from {currentStatus} to {newStatus} is not allowed.",
+                StatusCodes.Status400BadRequest);
         }
     }
-
 }

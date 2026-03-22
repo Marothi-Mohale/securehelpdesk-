@@ -49,6 +49,15 @@ public class TicketsController : ControllerBase
         return CreatedAtAction(nameof(GetTicket), new { ticketId = ticket.Id }, ticket);
     }
 
+    [HttpPatch("{ticketId:guid}")]
+    [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent}")]
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TicketResponseDto>> UpdateTicket(Guid ticketId, UpdateTicketRequestDto request, CancellationToken cancellationToken)
+    {
+        var ticket = await _ticketService.UpdateTicketAsync(ticketId, request, User.ToUserContext(), cancellationToken);
+        return Ok(ticket);
+    }
+
     [HttpPatch("{ticketId:guid}/status")]
     [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent}")]
     [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
@@ -59,7 +68,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpPatch("{ticketId:guid}/assign")]
-    [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent}")]
+    [Authorize(Roles = RoleNames.Admin)]
     [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<TicketResponseDto>> AssignTicket(Guid ticketId, AssignTicketRequestDto request, CancellationToken cancellationToken)
     {

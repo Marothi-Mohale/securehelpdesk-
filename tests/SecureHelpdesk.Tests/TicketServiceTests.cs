@@ -67,6 +67,43 @@ public class TicketServiceTests
         Assert.Equal(403, exception.StatusCode);
     }
 
+    [Fact]
+    public async Task AssignTicketAsync_Throws_When_User_Is_Not_Admin()
+    {
+        await using var dbContext = CreateDbContext();
+        var ticket = await SeedTicketAsync(dbContext, "user-1");
+
+        _userDirectoryService.Setup(s => s.UserExistsAsync("agent-1", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _userDirectoryService.Setup(s => s.UserIsInRoleAsync("agent-1", RoleNames.Agent, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var service = CreateService(dbContext);
+        var context = new UserContext("agent-2", "agent@test.local", [RoleNames.Agent]);
+
+        var act = async () => await service.AssignTicketAsync(ticket.Id, new AssignTicketRequestDto { AgentUserId = "agent-1" }, context, CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(act);
+        Assert.Equal(403, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateTicketAsync_Throws_When_Agent_Is_Not_Assigned()
+    {
+        await using var dbContext = CreateDbContext();
+        var ticket = await SeedTicketAsync(dbContext, "user-1");
+
+        var service = CreateService(dbContext);
+        var context = new UserContext("agent-1", "agent1@test.local", [RoleNames.Agent]);
+
+        var act = async () => await service.UpdateTicketAsync(
+            ticket.Id,
+            new UpdateTicketRequestDto { Title = "Updated title" },
+            context,
+            CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(act);
+        Assert.Equal(403, exception.StatusCode);
+    }
+
     private TicketService CreateService(ApplicationDbContext dbContext)
     {
         return new TicketService(new TicketRepository(dbContext), _userDirectoryService.Object, _logger.Object);

@@ -13,7 +13,4 @@ public class UpdateTicketRequestDto
 
     [EnumDataType(typeof(TicketPriority))]
     public TicketPriority? Priority { get; init; }
-
-    [EnumDataType(typeof(TicketStatus))]
-    public TicketStatus? Status { get; init; }
 }

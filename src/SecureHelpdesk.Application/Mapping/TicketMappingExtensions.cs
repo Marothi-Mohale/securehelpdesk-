@@ -75,6 +75,7 @@ public static class TicketMappingExtensions
             Domain.Enums.AuditActionType.AgentAssigned => $"Assigned agent changed from {auditLog.OldValue ?? "unassigned"} to {auditLog.NewValue ?? "unassigned"}",
             Domain.Enums.AuditActionType.CommentAdded => "Comment added",
             Domain.Enums.AuditActionType.PriorityChanged => $"Priority changed from {auditLog.OldValue} to {auditLog.NewValue}",
+            Domain.Enums.AuditActionType.TicketUpdated => auditLog.NewValue ?? "Ticket details updated",
             _ => auditLog.ActionType.ToString()
         };
     }
