@@ -23,7 +23,11 @@ public class ExceptionHandlingMiddleware
         }
         catch (ApiException exception)
         {
-            _logger.LogWarning(exception, "Handled application exception");
+            _logger.LogWarning(
+                exception,
+                "Handled application exception with status {StatusCode} and error code {ErrorCode}",
+                exception.StatusCode,
+                exception.ErrorCode ?? "n/a");
             await WriteErrorResponseAsync(
                 context,
                 exception.StatusCode,
@@ -50,7 +54,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Unhandled exception");
+            _logger.LogError(exception, "Unhandled exception while processing request");
             await WriteErrorResponseAsync(
                 context,
                 StatusCodes.Status500InternalServerError,

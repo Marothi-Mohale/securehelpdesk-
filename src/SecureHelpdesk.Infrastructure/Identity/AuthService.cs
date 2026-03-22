@@ -34,6 +34,11 @@ public class AuthService : IAuthService
         var normalizedEmail = NormalizeEmail(request.Email);
         var fullName = request.FullName.Trim();
 
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["Email"] = LogSanitizer.MaskEmail(normalizedEmail)
+        });
+
         var existingUser = await _userManager.FindByEmailAsync(normalizedEmail);
         if (existingUser is not null)
         {
@@ -56,7 +61,7 @@ public class AuthService : IAuthService
         }
 
         await _userManager.AddToRoleAsync(user, RoleNames.User);
-        _logger.LogInformation("Registered new user {UserId}", user.Id);
+        _logger.LogInformation("Registered new user {UserId} with default role {Role}", user.Id, RoleNames.User);
 
         return await CreateResponseAsync(user);
     }
@@ -64,10 +69,15 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["Email"] = LogSanitizer.MaskEmail(normalizedEmail)
+        });
+
         var user = await _userManager.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
-            _logger.LogWarning("Failed login attempt for unknown email {Email}", normalizedEmail);
+            _logger.LogWarning("Failed login attempt for unknown account");
             throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
         }
 
@@ -84,7 +94,7 @@ public class AuthService : IAuthService
             throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
         }
 
-        _logger.LogInformation("User {UserId} logged in", user.Id);
+        _logger.LogInformation("User {UserId} logged in successfully", user.Id);
         return await CreateResponseAsync(user);
     }
 

@@ -12,7 +12,7 @@ public static class LoggingConfigurationExtensions
             options.SingleLine = true;
             options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
             options.ColorBehavior = LoggerColorBehavior.Enabled;
-            options.IncludeScopes = false;
+            options.IncludeScopes = true;
         });
 
         return builder;

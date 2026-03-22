@@ -140,7 +140,11 @@ public class DbSeeder
         _dbContext.Tickets.AddRange(firstTicket, secondTicket);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Seeded demo users and tickets");
+        _logger.LogInformation(
+            "Seeded demo data with roles {RoleCount}, users {UserCount}, and tickets {TicketCount}",
+            RoleNames.All.Length,
+            5,
+            2);
     }
 
     private async Task<ApplicationUser> EnsureUserAsync(string fullName, string email, string password, string roleName)

@@ -34,6 +34,11 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> CreateTicketAsync(CreateTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["UserId"] = userContext.UserId
+        });
+
         var ticket = new Ticket
         {
             Title = request.Title.Trim(),
@@ -48,7 +53,11 @@ public class TicketService : ITicketService
         await _ticketRepository.AddAsync(ticket, cancellationToken);
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Ticket {TicketId} created by user {UserId}", ticket.Id, userContext.UserId);
+        _logger.LogInformation(
+            "Ticket {TicketId} created with priority {Priority} and status {Status}",
+            ticket.Id,
+            ticket.Priority,
+            ticket.Status);
 
         return await GetTicketByIdAsync(ticket.Id, userContext, cancellationToken);
     }
@@ -97,6 +106,12 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> UpdateTicketAsync(Guid ticketId, UpdateTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["TicketId"] = ticketId,
+            ["UserId"] = userContext.UserId
+        });
+
         if (request.Title is null && request.Description is null && request.Priority is null)
         {
             throw new ApiException("At least one editable field must be provided.", StatusCodes.Status400BadRequest);
@@ -148,13 +163,19 @@ public class TicketService : ITicketService
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Ticket {TicketId} details updated by user {UserId}", ticket.Id, userContext.UserId);
+        _logger.LogInformation("Ticket details updated. Changes: {Updates}", string.Join(", ", updates));
 
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
     public async Task<TicketResponseDto> UpdateStatusAsync(Guid ticketId, UpdateTicketStatusRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["TicketId"] = ticketId,
+            ["UserId"] = userContext.UserId
+        });
+
         var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
         EnsureCanManageTicket(ticket, userContext);
         var previousStatus = ticket.Status;
@@ -175,17 +196,21 @@ public class TicketService : ITicketService
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Ticket {TicketId} status changed from {PreviousStatus} to {NewStatus} by user {UserId}",
-            ticket.Id,
+            "Ticket status changed from {PreviousStatus} to {NewStatus}",
             previousStatus,
-            request.Status,
-            userContext.UserId);
+            request.Status);
 
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
     public async Task<TicketResponseDto> AssignTicketAsync(Guid ticketId, AssignTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["TicketId"] = ticketId,
+            ["UserId"] = userContext.UserId
+        });
+
         EnsureAdminRole(userContext);
 
         if (!await _userDirectoryService.UserExistsAsync(request.AgentUserId, cancellationToken))
@@ -219,13 +244,19 @@ public class TicketService : ITicketService
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Ticket {TicketId} assigned to {AgentUserId} by {UserId}", ticket.Id, request.AgentUserId, userContext.UserId);
+        _logger.LogInformation("Ticket assigned to agent {AgentUserId}", request.AgentUserId);
 
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
     public async Task<TicketResponseDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["TicketId"] = ticketId,
+            ["UserId"] = userContext.UserId
+        });
+
         var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
         EnsureCanViewTicket(ticket, userContext);
         var commentContent = request.Content.Trim();
@@ -244,7 +275,7 @@ public class TicketService : ITicketService
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Comment added to ticket {TicketId} by user {UserId}", ticket.Id, userContext.UserId);
+        _logger.LogInformation("Comment added to ticket with content length {CommentLength}", commentContent.Length);
 
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
