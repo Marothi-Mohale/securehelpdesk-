@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Secure Helpdesk API
 
 Production-minded ASP.NET Core Web API portfolio project for secure helpdesk and ticket management.
@@ -45,3 +46,7 @@ The app seeds roles, demo users, and sample tickets on startup. Database creatio
 - Business logic is centralized in services instead of duplicated across controllers.
 - Global exception handling returns consistent API problem responses and logs failures.
 - This environment does not have the .NET SDK installed, so restore, build, and tests still need to be executed locally after installing the SDK.
+=======
+# securehelpdesk-
+Secure Helpdesk API
+>>>>>>> 
