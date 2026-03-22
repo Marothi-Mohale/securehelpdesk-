@@ -152,13 +152,14 @@ dotnet restore
 dotnet run --project src/SecureHelpdesk.Api
 ```
 
-6. Open Swagger in development:
+6. Open the demo client or Swagger in development:
 
 ```text
-https://localhost:<port>/swagger
+http://localhost:5000/
+http://localhost:5000/swagger
 ```
 
-The development startup flow redirects `/` to Swagger for convenience.
+The development startup flow redirects `/` to the lightweight demo client.
 
 ## Demo Credentials
 
@@ -226,7 +227,13 @@ This is intentionally a focused suite rather than an overbuilt one.
 
 ## Sample Screenshots
 
-Add screenshots here when presenting the project:
+### Demo Client
+
+Minimal browser client for presenting the backend visually:
+
+![Secure Helpdesk Demo Client](./docs/screenshots/secure-helpdesk-demo.png)
+
+### Suggested Additional Screenshots
 
 - `docs/screenshots/swagger-overview.png`
   - Swagger landing page with grouped endpoints
