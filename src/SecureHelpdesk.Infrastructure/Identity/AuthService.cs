@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Application.Common;
@@ -36,7 +35,12 @@ public class AuthService : IAuthService
 
         if (string.IsNullOrWhiteSpace(fullName))
         {
-            throw new ApiException("Full name is required.", StatusCodes.Status400BadRequest, errorCode: "validation_failed", title: "Validation Failed");
+            throw ApiException.Validation(
+                "Full name is required.",
+                new Dictionary<string, string[]>
+                {
+                    [nameof(request.FullName)] = ["Full name is required."]
+                });
         }
 
         using var scope = _logger.BeginScope(new Dictionary<string, object?>
@@ -47,7 +51,7 @@ public class AuthService : IAuthService
         var existingUser = await _userManager.FindByEmailAsync(normalizedEmail);
         if (existingUser is not null)
         {
-            throw new ApiException("A user with this email already exists.", StatusCodes.Status409Conflict);
+            throw ApiException.Conflict("A user with this email already exists.", ErrorCodes.UserAlreadyExists);
         }
 
         var user = new ApplicationUser
@@ -61,15 +65,21 @@ public class AuthService : IAuthService
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
         {
-            var message = string.Join("; ", result.Errors.Select(e => e.Description));
-            throw new ApiException(message, StatusCodes.Status400BadRequest);
+            throw CreateIdentityValidationException(result.Errors);
         }
 
         var addToRoleResult = await _userManager.AddToRoleAsync(user, RoleNames.User);
         if (!addToRoleResult.Succeeded)
         {
-            var message = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
-            throw new ApiException(message, StatusCodes.Status500InternalServerError);
+            var deleteResult = await _userManager.DeleteAsync(user);
+            if (!deleteResult.Succeeded)
+            {
+                _logger.LogError(
+                    "Failed to roll back user {UserId} after default role assignment failure",
+                    user.Id);
+            }
+
+            throw CreateIdentityValidationException(addToRoleResult.Errors);
         }
 
         _logger.LogInformation("Registered new user {UserId} with default role {Role}", user.Id, RoleNames.User);
@@ -89,20 +99,20 @@ public class AuthService : IAuthService
         if (user is null)
         {
             _logger.LogWarning("Failed login attempt for unknown account");
-            throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
+            throw ApiException.Unauthorized("Invalid email or password.", ErrorCodes.AuthInvalidCredentials);
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
         if (result.IsLockedOut)
         {
             _logger.LogWarning("Locked out user {UserId} attempted login", user.Id);
-            throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
+            throw ApiException.Unauthorized("Invalid email or password.", ErrorCodes.AuthInvalidCredentials);
         }
 
         if (!result.Succeeded)
         {
             _logger.LogWarning("Failed login attempt for user {UserId}", user.Id);
-            throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
+            throw ApiException.Unauthorized("Invalid email or password.", ErrorCodes.AuthInvalidCredentials);
         }
 
         _logger.LogInformation("User {UserId} logged in successfully", user.Id);
@@ -114,7 +124,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            throw new ApiException("Authenticated user account was not found.", StatusCodes.Status404NotFound);
+            throw ApiException.NotFound("Authenticated user account was not found.", ErrorCodes.AuthUserNotFound);
         }
 
         var roles = (await _userManager.GetRolesAsync(user)).ToArray();
@@ -137,5 +147,19 @@ public class AuthService : IAuthService
     private static string NormalizeEmail(string email)
     {
         return email.Trim().ToLowerInvariant();
+    }
+
+    private static ApiException CreateIdentityValidationException(IEnumerable<IdentityError> errors)
+    {
+        var materializedErrors = errors.ToArray();
+        var validationErrors = materializedErrors
+            .GroupBy(error => string.IsNullOrWhiteSpace(error.Code) ? "identity" : error.Code, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(error => error.Description).Distinct(StringComparer.Ordinal).ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+
+        var detail = string.Join("; ", materializedErrors.Select(error => error.Description));
+        return ApiException.Validation(detail, validationErrors);
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Application.Common;
@@ -16,17 +15,20 @@ namespace SecureHelpdesk.Application.Services;
 public class TicketService : ITicketService
 {
     private readonly ITicketAuditService _ticketAuditService;
+    private readonly ITicketAuthorizationService _ticketAuthorizationService;
     private readonly ITicketRepository _ticketRepository;
     private readonly IUserDirectoryService _userDirectoryService;
     private readonly ILogger<TicketService> _logger;
 
     public TicketService(
         ITicketAuditService ticketAuditService,
+        ITicketAuthorizationService ticketAuthorizationService,
         ITicketRepository ticketRepository,
         IUserDirectoryService userDirectoryService,
         ILogger<TicketService> logger)
     {
         _ticketAuditService = ticketAuditService;
+        _ticketAuthorizationService = ticketAuthorizationService;
         _ticketRepository = ticketRepository;
         _userDirectoryService = userDirectoryService;
         _logger = logger;
@@ -38,6 +40,8 @@ public class TicketService : ITicketService
         {
             ["UserId"] = userContext.UserId
         });
+
+        _ticketAuthorizationService.EnsureCanCreateTicket(userContext);
 
         var title = NormalizeRequiredText(request.Title, "Title", minimumLength: 5, maximumLength: 200);
         var description = NormalizeRequiredText(request.Description, "Description", minimumLength: 10, maximumLength: 4000);
@@ -67,14 +71,15 @@ public class TicketService : ITicketService
 
     public async Task<PaginatedResponseDto<TicketListResponseDto>> GetTicketsAsync(TicketQueryParameters queryParameters, UserContext userContext, CancellationToken cancellationToken)
     {
+        var normalizedQuery = NormalizeQueryParameters(queryParameters);
         var query = ApplySorting(
-            ApplyFilters(BuildScopedQuery(userContext), queryParameters),
-            queryParameters);
+            ApplyFilters(_ticketAuthorizationService.ApplyListScope(_ticketRepository.QueryForList(), userContext), normalizedQuery),
+            normalizedQuery);
 
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
-            .Skip((queryParameters.PageNumber - 1) * queryParameters.PageSize)
-            .Take(queryParameters.PageSize)
+            .Skip((normalizedQuery.PageNumber - 1) * normalizedQuery.PageSize)
+            .Take(normalizedQuery.PageSize)
             .Select(t => new TicketListResponseDto
             {
                 Id = t.Id,
@@ -94,16 +99,16 @@ public class TicketService : ITicketService
         return new PagedResult<TicketListResponseDto>
         {
             Items = items,
-            PageNumber = queryParameters.PageNumber,
-            PageSize = queryParameters.PageSize,
+            PageNumber = normalizedQuery.PageNumber,
+            PageSize = normalizedQuery.PageSize,
             TotalCount = totalCount
         }.ToResponseDto();
     }
 
     public async Task<TicketResponseDto> GetTicketByIdAsync(Guid ticketId, UserContext userContext, CancellationToken cancellationToken)
     {
-        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
-        EnsureCanViewTicket(ticket, userContext);
+        var ticket = await GetRequiredTicketAsync(ticketId, asNoTracking: true, cancellationToken);
+        _ticketAuthorizationService.EnsureCanViewTicket(ticket, userContext);
         return ticket.ToResponseDto();
     }
 
@@ -117,11 +122,16 @@ public class TicketService : ITicketService
 
         if (request.Title is null && request.Description is null && request.Priority is null)
         {
-            throw new ApiException("At least one editable field must be provided.", StatusCodes.Status400BadRequest);
+            throw ApiException.Validation(
+                "At least one editable field must be provided.",
+                new Dictionary<string, string[]>
+                {
+                    ["request"] = ["At least one editable field must be provided."]
+                });
         }
 
-        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
-        EnsureCanManageTicket(ticket, userContext);
+        var ticket = await GetRequiredTicketAsync(ticketId, asNoTracking: false, cancellationToken);
+        _ticketAuthorizationService.EnsureCanManageTicket(ticket, userContext);
 
         var updates = new List<string>();
 
@@ -156,7 +166,7 @@ public class TicketService : ITicketService
 
         if (updates.Count == 0)
         {
-            throw new ApiException("No changes were detected.", StatusCodes.Status400BadRequest);
+            throw ApiException.BadRequest("No changes were detected.", ErrorCodes.TicketNoChangesDetected);
         }
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
@@ -179,16 +189,16 @@ public class TicketService : ITicketService
             ["UserId"] = userContext.UserId
         });
 
-        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
-        EnsureCanManageTicket(ticket, userContext);
+        var ticket = await GetRequiredTicketAsync(ticketId, asNoTracking: false, cancellationToken);
+        _ticketAuthorizationService.EnsureCanManageTicket(ticket, userContext);
         var previousStatus = ticket.Status;
 
         if (previousStatus == request.Status)
         {
-            throw new ApiException("Ticket already has the requested status.", StatusCodes.Status400BadRequest);
+            throw ApiException.BadRequest("Ticket already has the requested status.", ErrorCodes.TicketNoChangesDetected);
         }
 
-        EnsureValidStatusTransition(previousStatus, request.Status);
+        TicketWorkflowRules.EnsureValidStatusTransition(previousStatus, request.Status);
 
         ticket.Status = request.Status;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
@@ -214,31 +224,32 @@ public class TicketService : ITicketService
             ["UserId"] = userContext.UserId
         });
 
-        EnsureAdminRole(userContext);
+        _ticketAuthorizationService.EnsureCanAssignTicket(userContext);
+        var agentUserId = NormalizeRequiredText(request.AgentUserId, nameof(request.AgentUserId), minimumLength: 1, maximumLength: 450);
 
-        if (!await _userDirectoryService.UserExistsAsync(request.AgentUserId, cancellationToken))
+        if (!await _userDirectoryService.UserExistsAsync(agentUserId, cancellationToken))
         {
-            throw new ApiException("Agent user was not found.", StatusCodes.Status404NotFound);
+            throw ApiException.NotFound("Agent user was not found.", ErrorCodes.UserNotFound);
         }
 
-        if (!await _userDirectoryService.UserIsInRoleAsync(request.AgentUserId, RoleNames.Agent, cancellationToken))
+        if (!await _userDirectoryService.UserIsInRoleAsync(agentUserId, RoleNames.Agent, cancellationToken))
         {
-            throw new ApiException("The selected assignee is not an agent.", StatusCodes.Status400BadRequest);
+            throw ApiException.BadRequest("The selected assignee is not an agent.", ErrorCodes.UserNotAgent);
         }
 
-        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
+        var ticket = await GetRequiredTicketAsync(ticketId, asNoTracking: false, cancellationToken);
         var previousAssigneeUserId = ticket.AssignedToUserId;
 
-        if (string.Equals(previousAssigneeUserId, request.AgentUserId, StringComparison.Ordinal))
+        if (string.Equals(previousAssigneeUserId, agentUserId, StringComparison.Ordinal))
         {
-            throw new ApiException("Ticket is already assigned to the selected agent.", StatusCodes.Status400BadRequest);
+            throw ApiException.BadRequest("Ticket is already assigned to the selected agent.", ErrorCodes.TicketAlreadyAssigned);
         }
 
         var previousAssigneeLabel = await ResolveAssigneeLabelAsync(previousAssigneeUserId, cancellationToken);
-        var newAssigneeLabel = await ResolveAssigneeLabelAsync(request.AgentUserId, cancellationToken)
-            ?? request.AgentUserId;
+        var newAssigneeLabel = await ResolveAssigneeLabelAsync(agentUserId, cancellationToken)
+            ?? agentUserId;
 
-        ticket.AssignedToUserId = request.AgentUserId;
+        ticket.AssignedToUserId = agentUserId;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
 
         await _ticketRepository.AddAuditLogAsync(
@@ -247,7 +258,7 @@ public class TicketService : ITicketService
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Ticket assigned to agent {AgentUserId}", request.AgentUserId);
+        _logger.LogInformation("Ticket assigned to agent {AgentUserId}", agentUserId);
 
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
@@ -260,9 +271,9 @@ public class TicketService : ITicketService
             ["UserId"] = userContext.UserId
         });
 
-        var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
-        EnsureCanViewTicket(ticket, userContext);
-        var commentContent = NormalizeRequiredText(request.Content, "Comment content", minimumLength: 1, maximumLength: 1000);
+        var ticket = await GetRequiredTicketAsync(ticketId, asNoTracking: false, cancellationToken);
+        _ticketAuthorizationService.EnsureCanViewTicket(ticket, userContext);
+        var commentContent = NormalizeRequiredText(request.Content, nameof(request.Content), minimumLength: 1, maximumLength: 1000);
 
         var comment = new TicketComment
         {
@@ -287,33 +298,32 @@ public class TicketService : ITicketService
         return comment.ToResponseDto(authorName);
     }
 
-    private IQueryable<Ticket> BuildScopedQuery(UserContext userContext)
+    private async Task<Ticket> GetRequiredTicketAsync(Guid ticketId, bool asNoTracking, CancellationToken cancellationToken)
     {
-        var query = _ticketRepository.QueryForList();
-
-        if (userContext.IsAdmin)
-        {
-            return query;
-        }
-
-        if (userContext.IsAgent)
-        {
-            return query.Where(t => t.AssignedToUserId == userContext.UserId || t.CreatedByUserId == userContext.UserId);
-        }
-
-        return query.Where(t => t.CreatedByUserId == userContext.UserId);
-    }
-
-    private async Task<Ticket> GetRequiredTicketAsync(Guid ticketId, CancellationToken cancellationToken)
-    {
-        var ticket = await _ticketRepository.GetByIdWithDetailsAsync(ticketId, cancellationToken);
+        var ticket = await _ticketRepository.GetByIdWithDetailsAsync(ticketId, asNoTracking, cancellationToken);
 
         if (ticket is null)
         {
-            throw new ApiException("Ticket was not found.", StatusCodes.Status404NotFound);
+            throw ApiException.NotFound("Ticket was not found.", ErrorCodes.TicketNotFound);
         }
 
         return ticket;
+    }
+
+    private static TicketQueryParameters NormalizeQueryParameters(TicketQueryParameters queryParameters)
+    {
+        return new TicketQueryParameters
+        {
+            Search = string.IsNullOrWhiteSpace(queryParameters.Search) ? null : queryParameters.Search.Trim(),
+            Status = queryParameters.Status,
+            Priority = queryParameters.Priority,
+            AssignedToUserId = NormalizeOptionalIdentifier(queryParameters.AssignedToUserId),
+            CreatedByUserId = NormalizeOptionalIdentifier(queryParameters.CreatedByUserId),
+            SortBy = queryParameters.SortBy,
+            SortDirection = queryParameters.SortDirection,
+            PageNumber = queryParameters.PageNumber,
+            PageSize = queryParameters.PageSize
+        };
     }
 
     private async Task<string?> ResolveAssigneeLabelAsync(string? userId, CancellationToken cancellationToken)
@@ -325,6 +335,11 @@ public class TicketService : ITicketService
 
         var displayName = await _userDirectoryService.GetUserDisplayNameAsync(userId, cancellationToken);
         return $"{displayName} ({userId})";
+    }
+
+    private static string? NormalizeOptionalIdentifier(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static IQueryable<Ticket> ApplySorting(IQueryable<Ticket> query, TicketQueryParameters queryParameters)
@@ -371,82 +386,18 @@ public class TicketService : ITicketService
         return query;
     }
 
-    private static void EnsureCanViewTicket(Ticket ticket, UserContext userContext)
-    {
-        if (userContext.IsAdmin)
-        {
-            return;
-        }
-
-        if (userContext.IsAgent)
-        {
-            if (string.Equals(ticket.AssignedToUserId, userContext.UserId, StringComparison.Ordinal)
-                || string.Equals(ticket.CreatedByUserId, userContext.UserId, StringComparison.Ordinal))
-            {
-                return;
-            }
-        }
-        else if (string.Equals(ticket.CreatedByUserId, userContext.UserId, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        throw new ApiException("You are not allowed to access this ticket.", StatusCodes.Status403Forbidden);
-    }
-
-    private static void EnsureCanManageTicket(Ticket ticket, UserContext userContext)
-    {
-        if (userContext.IsAdmin)
-        {
-            return;
-        }
-
-        if (userContext.IsAgent && string.Equals(ticket.AssignedToUserId, userContext.UserId, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        throw new ApiException("You are not allowed to manage this ticket.", StatusCodes.Status403Forbidden);
-    }
-
-    private static void EnsureAdminRole(UserContext userContext)
-    {
-        if (!userContext.IsAdmin)
-        {
-            throw new ApiException("You are not allowed to perform this action.", StatusCodes.Status403Forbidden);
-        }
-    }
-
-    private static void EnsureValidStatusTransition(TicketStatus currentStatus, TicketStatus newStatus)
-    {
-        TicketStatus[] allowed = currentStatus switch
-        {
-            TicketStatus.Open => [TicketStatus.InProgress, TicketStatus.Closed],
-            TicketStatus.InProgress => [TicketStatus.Resolved, TicketStatus.Closed],
-            TicketStatus.Resolved => [TicketStatus.Closed, TicketStatus.InProgress],
-            TicketStatus.Closed => [TicketStatus.InProgress],
-            _ => Array.Empty<TicketStatus>()
-        };
-
-        if (!allowed.Contains(newStatus))
-        {
-            throw new ApiException(
-                $"Status transition from {currentStatus} to {newStatus} is not allowed.",
-                StatusCodes.Status400BadRequest);
-        }
-    }
-
     private static string NormalizeRequiredText(string? input, string fieldName, int minimumLength, int maximumLength)
     {
         var normalized = input?.Trim() ?? string.Empty;
 
         if (normalized.Length < minimumLength || normalized.Length > maximumLength)
         {
-            throw new ApiException(
+            throw ApiException.Validation(
                 $"{fieldName} must be between {minimumLength} and {maximumLength} characters after trimming.",
-                StatusCodes.Status400BadRequest,
-                errorCode: "validation_failed",
-                title: "Validation Failed");
+                new Dictionary<string, string[]>
+                {
+                    [fieldName] = [$"{fieldName} must be between {minimumLength} and {maximumLength} characters after trimming."]
+                });
         }
 
         return normalized;

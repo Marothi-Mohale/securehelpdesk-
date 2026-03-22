@@ -91,6 +91,7 @@ public class AuthServiceTests
             CancellationToken.None));
 
         Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+        Assert.Equal(ErrorCodes.UserAlreadyExists, exception.ErrorCode);
         userManager.Verify(manager => manager.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -113,7 +114,44 @@ public class AuthServiceTests
             CancellationToken.None));
 
         Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        Assert.Equal(ErrorCodes.ValidationFailed, exception.ErrorCode);
         userManager.Verify(manager => manager.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_Deletes_User_When_Default_Role_Assignment_Fails()
+    {
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManager = CreateUserManager(userStore.Object);
+        var signInManager = CreateSignInManager(userManager.Object);
+
+        userManager.Setup(manager => manager.FindByEmailAsync("new.user@test.local"))
+            .ReturnsAsync((ApplicationUser?)null);
+        userManager.Setup(manager => manager.CreateAsync(It.IsAny<ApplicationUser>(), "Password123!"))
+            .ReturnsAsync(IdentityResult.Success);
+        userManager.Setup(manager => manager.AddToRoleAsync(It.IsAny<ApplicationUser>(), RoleNames.User))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError
+            {
+                Code = "RoleAssignmentFailed",
+                Description = "Unable to assign the default role."
+            }));
+        userManager.Setup(manager => manager.DeleteAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var service = new AuthService(userManager.Object, signInManager.Object, _tokenService.Object, _logger.Object);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() => service.RegisterAsync(
+            new RegisterRequestDto
+            {
+                FullName = "New User",
+                Email = "new.user@test.local",
+                Password = "Password123!"
+            },
+            CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        Assert.Equal(ErrorCodes.ValidationFailed, exception.ErrorCode);
+        userManager.Verify(manager => manager.DeleteAsync(It.IsAny<ApplicationUser>()), Times.Once);
     }
 
     [Fact]
@@ -176,6 +214,7 @@ public class AuthServiceTests
             CancellationToken.None));
 
         Assert.Equal(StatusCodes.Status401Unauthorized, exception.StatusCode);
+        Assert.Equal(ErrorCodes.AuthInvalidCredentials, exception.ErrorCode);
         signInManager.Verify(manager => manager.CheckPasswordSignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>(), true), Times.Never);
     }
 

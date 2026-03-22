@@ -34,17 +34,23 @@ public class TicketRepository : ITicketRepository
         return _dbContext.Tickets.AsNoTracking();
     }
 
-    public Task<Ticket?> GetByIdWithDetailsAsync(Guid ticketId, CancellationToken cancellationToken)
+    public Task<Ticket?> GetByIdWithDetailsAsync(Guid ticketId, bool asNoTracking, CancellationToken cancellationToken)
     {
-        return _dbContext.Tickets
+        IQueryable<Ticket> query = _dbContext.Tickets
             .AsSplitQuery()
             .Include(t => t.CreatedByUser)
             .Include(t => t.AssignedToUser)
             .Include(t => t.Comments)
                 .ThenInclude(c => c.AuthorUser)
             .Include(t => t.AuditLogs)
-                .ThenInclude(a => a.ChangedByUser)
-            .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+                .ThenInclude(a => a.ChangedByUser);
+
+        if (asNoTracking)
+        {
+            query = query.AsNoTracking();
+        }
+
+        return query.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

@@ -30,11 +30,13 @@ public class TicketListQueryRequestDto
     /// <summary>
     /// Optional filter for the currently assigned agent.
     /// </summary>
+    [StringLength(450, ErrorMessage = "AssignedToUserId must be 450 characters or fewer.")]
     public string? AssignedToUserId { get; init; }
 
     /// <summary>
     /// Optional filter for the ticket creator.
     /// </summary>
+    [StringLength(450, ErrorMessage = "CreatedByUserId must be 450 characters or fewer.")]
     public string? CreatedByUserId { get; init; }
 
     /// <summary>

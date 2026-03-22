@@ -39,9 +39,28 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
 
+        var databaseProvider = configuration["Database:Provider"] ?? "SqlServer";
+        var isSqlite = string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase);
+
         services.AddDbContext<ApplicationDbContext>(options =>
+        {
+            if (isSqlite)
+            {
+                var sqliteConnectionString = configuration.GetConnectionString("SqliteConnection")
+                    ?? throw new InvalidOperationException("SQLite connection string is missing.");
+
+                options.UseSqlite(
+                    sqliteConnectionString,
+                    sqliteOptions => sqliteOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
+
+                return;
+            }
+
+            var sqlServerConnectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("SQL Server connection string is missing.");
+
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
+                sqlServerConnectionString,
                 sqlOptions =>
                 {
                     sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
@@ -49,7 +68,8 @@ public static class InfrastructureServiceCollectionExtensions
                         maxRetryCount: 5,
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
-                }));
+                });
+        });
 
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
@@ -136,6 +156,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITicketAuditService, TicketAuditService>();
+        services.AddScoped<ITicketAuthorizationService, TicketAuthorizationService>();
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IUserDirectoryService, UserDirectoryService>();

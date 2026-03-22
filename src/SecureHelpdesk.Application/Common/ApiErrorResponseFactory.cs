@@ -34,7 +34,7 @@ public static class ApiErrorResponseFactory
             Status = StatusCodes.Status400BadRequest,
             Title = "Validation Failed",
             Detail = detail,
-            ErrorCode = "validation_failed",
+            ErrorCode = ErrorCodes.ValidationFailed,
             TraceId = context.TraceIdentifier,
             Path = context.Request.Path.Value ?? string.Empty,
             TimestampUtc = DateTime.UtcNow,
@@ -60,12 +60,12 @@ public static class ApiErrorResponseFactory
     {
         return statusCode switch
         {
-            StatusCodes.Status400BadRequest => "bad_request",
-            StatusCodes.Status401Unauthorized => "unauthorized",
-            StatusCodes.Status403Forbidden => "forbidden",
-            StatusCodes.Status404NotFound => "not_found",
-            StatusCodes.Status409Conflict => "conflict",
-            _ when statusCode >= 500 => "server_error",
+            StatusCodes.Status400BadRequest => ErrorCodes.BadRequest,
+            StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,
+            StatusCodes.Status403Forbidden => ErrorCodes.Forbidden,
+            StatusCodes.Status404NotFound => ErrorCodes.NotFound,
+            StatusCodes.Status409Conflict => ErrorCodes.Conflict,
+            _ when statusCode >= 500 => ErrorCodes.ServerError,
             _ => "request_failed"
         };
     }

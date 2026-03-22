@@ -50,6 +50,10 @@ public class ExceptionHandlingMiddleware
                 StatusCodes.Status400BadRequest,
                 exception.Message);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogInformation("Request was canceled by the client");
+        }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled exception while processing request");

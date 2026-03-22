@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecureHelpdesk.Api.Extensions;
-using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
@@ -18,11 +16,9 @@ namespace SecureHelpdesk.Api.Controllers;
 [Route("api/tickets")]
 [Authorize]
 [Produces("application/json")]
-public class TicketsController : ControllerBase
+public class TicketsController : ApiControllerBase
 {
     private readonly ITicketService _ticketService;
-
-    private UserContext CurrentUser => User.ToUserContext();
 
     public TicketsController(ITicketService ticketService)
     {

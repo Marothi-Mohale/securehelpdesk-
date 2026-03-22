@@ -21,6 +21,7 @@ public class TicketServiceTests
     private readonly Mock<IUserDirectoryService> _userDirectoryService = new();
     private readonly Mock<ILogger<TicketService>> _logger = new();
     private readonly ITicketAuditService _ticketAuditService = new TicketAuditService();
+    private readonly ITicketAuthorizationService _ticketAuthorizationService = new TicketAuthorizationService();
 
     [Fact]
     public async Task AssignTicketAsync_Throws_When_Assignee_Is_Not_Agent()
@@ -327,7 +328,12 @@ public class TicketServiceTests
 
     private TicketService CreateService(ApplicationDbContext dbContext)
     {
-        return new TicketService(_ticketAuditService, new TicketRepository(dbContext), _userDirectoryService.Object, _logger.Object);
+        return new TicketService(
+            _ticketAuditService,
+            _ticketAuthorizationService,
+            new TicketRepository(dbContext),
+            _userDirectoryService.Object,
+            _logger.Object);
     }
 
     private static async Task<Ticket> SeedTicketAsync(

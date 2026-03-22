@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecureHelpdesk.Api.Extensions;
 using SecureHelpdesk.Application.DTOs.Auth;
 using SecureHelpdesk.Application.DTOs.Common;
 using SecureHelpdesk.Application.Interfaces;
@@ -14,7 +13,7 @@ namespace SecureHelpdesk.Api.Controllers;
 [ApiController]
 [Route("api/auth")]
 [Produces("application/json")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
 
@@ -74,7 +73,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponseDto), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileDto>> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var profile = await _authService.GetCurrentUserProfileAsync(User.ToUserContext().UserId, cancellationToken);
+        var profile = await _authService.GetCurrentUserProfileAsync(CurrentUser.UserId, cancellationToken);
         return Ok(profile);
     }
 }

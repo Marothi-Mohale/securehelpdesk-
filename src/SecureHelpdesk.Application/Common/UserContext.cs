@@ -4,7 +4,14 @@ namespace SecureHelpdesk.Application.Common;
 
 public sealed record UserContext(string UserId, string Email, IReadOnlyCollection<string> Roles)
 {
-    public bool IsAdmin => Roles.Contains(RoleNames.Admin, StringComparer.Ordinal);
-    public bool IsAgent => Roles.Contains(RoleNames.Agent, StringComparer.Ordinal);
-    public bool IsRegularUser => Roles.Contains(RoleNames.User, StringComparer.Ordinal);
+    private HashSet<string> RoleSet { get; } = new(Roles, StringComparer.Ordinal);
+
+    public bool IsAdmin => HasRole(RoleNames.Admin);
+    public bool IsAgent => HasRole(RoleNames.Agent);
+    public bool IsRegularUser => HasRole(RoleNames.User);
+
+    public bool HasRole(string roleName)
+    {
+        return RoleSet.Contains(roleName);
+    }
 }
