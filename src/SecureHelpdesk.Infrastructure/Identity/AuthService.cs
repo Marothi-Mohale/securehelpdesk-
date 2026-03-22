@@ -31,7 +31,10 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken)
     {
-        var existingUser = await _userManager.FindByEmailAsync(request.Email);
+        var normalizedEmail = NormalizeEmail(request.Email);
+        var fullName = request.FullName.Trim();
+
+        var existingUser = await _userManager.FindByEmailAsync(normalizedEmail);
         if (existingUser is not null)
         {
             throw new ApiException("A user with this email already exists.", StatusCodes.Status409Conflict);
@@ -39,9 +42,9 @@ public class AuthService : IAuthService
 
         var user = new ApplicationUser
         {
-            UserName = request.Email,
-            Email = request.Email,
-            FullName = request.FullName.Trim(),
+            UserName = normalizedEmail,
+            Email = normalizedEmail,
+            FullName = fullName,
             EmailConfirmed = true
         };
 
@@ -60,15 +63,24 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var normalizedEmail = NormalizeEmail(request.Email);
+        var user = await _userManager.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
+            _logger.LogWarning("Failed login attempt for unknown email {Email}", normalizedEmail);
             throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+        if (result.IsLockedOut)
+        {
+            _logger.LogWarning("Locked out user {UserId} attempted login", user.Id);
+            throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
+        }
+
         if (!result.Succeeded)
         {
+            _logger.LogWarning("Failed login attempt for user {UserId}", user.Id);
             throw new ApiException("Invalid email or password.", StatusCodes.Status401Unauthorized);
         }
 
@@ -87,5 +99,10 @@ public class AuthService : IAuthService
             ExpiresAtUtc = expiresAtUtc,
             User = user.ToUserProfileDto(roles)
         };
+    }
+
+    private static string NormalizeEmail(string email)
+    {
+        return email.Trim().ToLowerInvariant();
     }
 }

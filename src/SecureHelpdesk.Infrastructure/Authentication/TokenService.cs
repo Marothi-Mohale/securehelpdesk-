@@ -19,11 +19,15 @@ public class TokenService : ITokenService
 
     public Task<(string Token, DateTime ExpiresAtUtc)> CreateTokenAsync(ApplicationUser user, IReadOnlyCollection<string> roles)
     {
+        var now = DateTime.UtcNow;
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationMinutes);
+        var tokenId = Guid.NewGuid().ToString("N");
 
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Jti, tokenId),
+            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.UniqueName, user.FullName),
             new(ClaimTypes.NameIdentifier, user.Id),
@@ -40,6 +44,7 @@ public class TokenService : ITokenService
             issuer: _jwtOptions.Issuer,
             audience: _jwtOptions.Audience,
             claims: claims,
+            notBefore: now,
             expires: expiresAtUtc,
             signingCredentials: credentials);
 
