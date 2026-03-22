@@ -95,5 +95,15 @@
             Comments are returned as their own resource and also appear in the ticket detail timeline.
             </remarks>
         </member>
+        <member name="T:SecureHelpdesk.Api.Controllers.UsersController">
+            <summary>
+            Provides lightweight user lookups for demo and assignment scenarios.
+            </summary>
+        </member>
+        <member name="M:SecureHelpdesk.Api.Controllers.UsersController.GetAgents(System.Threading.CancellationToken)">
+            <summary>
+            Returns agents available for ticket assignment.
+            </summary>
+        </member>
     </members>
 </doc>

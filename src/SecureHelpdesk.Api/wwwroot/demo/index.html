@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure Helpdesk Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <p class="eyebrow">Interview Demo</p>
+        <h1>Secure Helpdesk</h1>
+        <p class="muted">A minimal client for presenting the API visually.</p>
+      </div>
+
+      <section class="panel">
+        <h2>Sign In</h2>
+        <form id="login-form" class="stack">
+          <label>
+            Email
+            <input id="email" type="email" placeholder="admin@securehelpdesk.local" required>
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" placeholder="AdminDemo123!" required>
+          </label>
+          <button type="submit">Login</button>
+        </form>
+
+        <div class="credential-list">
+          <p class="muted">Demo accounts</p>
+          <button class="ghost credential" data-email="admin@securehelpdesk.local" data-password="AdminDemo123!">Admin</button>
+          <button class="ghost credential" data-email="agent1@securehelpdesk.local" data-password="AgentDemo123!">Agent</button>
+          <button class="ghost credential" data-email="user1@securehelpdesk.local" data-password="UserDemo123!">User</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Session</h2>
+        <div id="session-summary" class="stack compact">
+          <p class="muted">Not signed in.</p>
+        </div>
+        <button id="logout-button" class="ghost" type="button">Logout</button>
+      </section>
+
+      <section class="panel">
+        <h2>API Shortcuts</h2>
+        <div class="stack compact">
+          <a class="ghost linklike" href="/swagger" target="_blank" rel="noreferrer">Open Swagger</a>
+          <button id="refresh-button" class="ghost" type="button">Refresh Tickets</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Backend Presentation Client</p>
+          <h2>Ticket Management Walkthrough</h2>
+          <p class="muted">Login, filter tickets, inspect detail, create a new issue, comment, and assign if you are signed in as an admin.</p>
+        </div>
+        <div id="flash" class="flash" hidden></div>
+      </header>
+
+      <section class="workspace">
+        <div class="column wide">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Tickets</h3>
+                <p class="muted">Server-backed list with filtering and pagination.</p>
+              </div>
+              <span id="ticket-count" class="pill">0 tickets</span>
+            </div>
+
+            <form id="filter-form" class="filters">
+              <input id="search" type="search" placeholder="Search title or description">
+              <select id="status-filter">
+                <option value="">All statuses</option>
+                <option value="Open">Open</option>
+                <option value="InProgress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <select id="priority-filter">
+                <option value="">All priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+              <select id="sort-by">
+                <option value="CreatedAt">Newest</option>
+                <option value="UpdatedAt">Recently Updated</option>
+              </select>
+              <button type="submit">Apply</button>
+            </form>
+
+            <div id="ticket-list" class="ticket-list"></div>
+            <div id="pagination" class="pagination"></div>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="panel">
+            <h3>Create Ticket</h3>
+            <form id="create-ticket-form" class="stack">
+              <label>
+                Title
+                <input id="create-title" type="text" maxlength="200" placeholder="Short issue summary" required>
+              </label>
+              <label>
+                Description
+                <textarea id="create-description" rows="5" maxlength="4000" placeholder="Describe the problem clearly" required></textarea>
+              </label>
+              <label>
+                Priority
+                <select id="create-priority">
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </label>
+              <button type="submit">Create Ticket</button>
+            </form>
+          </section>
+
+          <section class="panel detail-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Ticket Detail</h3>
+                <p class="muted">Select a ticket from the list.</p>
+              </div>
+              <span id="detail-status" class="pill subtle">No selection</span>
+            </div>
+
+            <div id="ticket-detail" class="detail-empty">
+              <p class="muted">Choose a ticket to view comments, audit history, and assignment controls.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

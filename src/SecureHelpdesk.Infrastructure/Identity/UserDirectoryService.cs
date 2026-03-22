@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using SecureHelpdesk.Application.Common;
+using SecureHelpdesk.Application.DTOs.Common;
 using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Domain.Entities;
 
@@ -35,5 +36,20 @@ public class UserDirectoryService : IUserDirectoryService
         }
 
         return user.FullName;
+    }
+
+    public async Task<IReadOnlyCollection<UserLookupDto>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+    {
+        var users = await _userManager.GetUsersInRoleAsync(roleName);
+
+        return users
+            .OrderBy(user => user.FullName)
+            .Select(user => new UserLookupDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty
+            })
+            .ToArray();
     }
 }

@@ -94,6 +94,11 @@
             Standard wrapper for paginated list responses.
             </summary>
         </member>
+        <member name="T:SecureHelpdesk.Application.DTOs.Common.UserLookupDto">
+            <summary>
+            Lightweight user lookup item for assignment and selection UIs.
+            </summary>
+        </member>
         <member name="T:SecureHelpdesk.Application.DTOs.Tickets.AddCommentRequestDto">
             <summary>
             Request payload for adding a discussion comment to a ticket.

@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\Student\\secureHelpdesk\\src\\SecureHelpdesk.Api\\wwwroot\\demo\\app.js",
+      "PackagePath": "staticwebassets\\demo\\app.js"
+    },
+    {
+      "Id": "C:\\Users\\Student\\secureHelpdesk\\src\\SecureHelpdesk.Api\\wwwroot\\demo\\index.html",
+      "PackagePath": "staticwebassets\\demo\\index.html"
+    },
+    {
+      "Id": "C:\\Users\\Student\\secureHelpdesk\\src\\SecureHelpdesk.Api\\wwwroot\\demo\\styles.css",
+      "PackagePath": "staticwebassets\\demo\\styles.css"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.SecureHelpdesk.Api.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.SecureHelpdesk.Api.props",
+      "PackagePath": "build\\SecureHelpdesk.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.SecureHelpdesk.Api.props",
+      "PackagePath": "buildMultiTargeting\\SecureHelpdesk.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.SecureHelpdesk.Api.props",
+      "PackagePath": "buildTransitive\\SecureHelpdesk.Api.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

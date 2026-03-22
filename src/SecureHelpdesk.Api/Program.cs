@@ -24,12 +24,16 @@ if (app.Environment.IsDevelopment())
         options.EnablePersistAuthorization();
     });
 
-    app.MapGet("/", () => Results.Redirect("/swagger"))
+    app.MapGet("/", () => Results.Redirect("/demo/index.html"))
+        .ExcludeFromDescription();
+
+    app.MapGet("/demo", () => Results.Redirect("/demo/index.html"))
         .ExcludeFromDescription();
 }
 
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
