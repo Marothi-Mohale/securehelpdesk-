@@ -5,9 +5,9 @@ namespace SecureHelpdesk.Application.Mapping;
 
 public static class TicketMappingExtensions
 {
-    public static TicketDetailDto ToDetailDto(this Ticket ticket)
+    public static TicketResponseDto ToResponseDto(this Ticket ticket)
     {
-        return new TicketDetailDto
+        return new TicketResponseDto
         {
             Id = ticket.Id,
             Title = ticket.Title,
@@ -17,32 +17,52 @@ public static class TicketMappingExtensions
             CreatedAtUtc = ticket.CreatedAtUtc,
             UpdatedAtUtc = ticket.UpdatedAtUtc,
             CreatedByUserId = ticket.CreatedByUserId,
-            CreatedByUserName = ticket.CreatedByUser.FullName,
+            CreatedByName = ticket.CreatedByUser.FullName,
             AssignedToUserId = ticket.AssignedToUserId,
-            AssignedToUserName = ticket.AssignedToUser?.FullName,
+            AssignedToName = ticket.AssignedToUser?.FullName,
             Comments = ticket.Comments
                 .OrderBy(c => c.CreatedAtUtc)
-                .Select(c => new TicketCommentDto
+                .Select(c => new CommentResponseDto
                 {
                     Id = c.Id,
                     Content = c.Content,
                     CreatedAtUtc = c.CreatedAtUtc,
-                    UserId = c.AuthorUserId,
-                    UserName = c.AuthorUser.FullName
+                    AuthorUserId = c.AuthorUserId,
+                    AuthorName = c.AuthorUser.FullName
                 })
                 .ToList(),
-            AuditHistory = ticket.AuditLogs
+            AuditLogs = ticket.AuditLogs
                 .OrderByDescending(a => a.ChangedAtUtc)
-                .Select(a => new TicketAuditHistoryDto
+                .Select(a => new AuditLogResponseDto
                 {
                     Id = a.Id,
                     ActionType = a.ActionType,
+                    OldValue = a.OldValue,
+                    NewValue = a.NewValue,
                     Description = BuildDescription(a),
-                    CreatedAtUtc = a.ChangedAtUtc,
-                    PerformedByUserId = a.ChangedByUserId,
-                    PerformedByUserName = a.ChangedByUser.FullName
+                    ChangedAtUtc = a.ChangedAtUtc,
+                    ChangedByUserId = a.ChangedByUserId,
+                    ChangedByName = a.ChangedByUser.FullName
                 })
                 .ToList()
+        };
+    }
+
+    public static TicketListResponseDto ToListResponseDto(this Ticket ticket)
+    {
+        return new TicketListResponseDto
+        {
+            Id = ticket.Id,
+            Title = ticket.Title,
+            Status = ticket.Status,
+            Priority = ticket.Priority,
+            CreatedAtUtc = ticket.CreatedAtUtc,
+            UpdatedAtUtc = ticket.UpdatedAtUtc,
+            CreatedByUserId = ticket.CreatedByUserId,
+            CreatedByName = ticket.CreatedByUser.FullName,
+            AssignedToUserId = ticket.AssignedToUserId,
+            AssignedToName = ticket.AssignedToUser?.FullName,
+            CommentCount = ticket.Comments.Count
         };
     }
 

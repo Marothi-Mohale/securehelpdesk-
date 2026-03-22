@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Application.Common;
+using SecureHelpdesk.Application.DTOs.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
 using SecureHelpdesk.Application.Mapping;
@@ -28,7 +29,7 @@ public class TicketService : ITicketService
         _logger = logger;
     }
 
-    public async Task<TicketDetailDto> CreateTicketAsync(CreateTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<TicketResponseDto> CreateTicketAsync(CreateTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
         var ticket = new Ticket
         {
@@ -55,7 +56,7 @@ public class TicketService : ITicketService
         return await GetTicketByIdAsync(ticket.Id, userContext, cancellationToken);
     }
 
-    public async Task<PagedResult<TicketListItemDto>> GetTicketsAsync(TicketQueryParameters queryParameters, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<PaginatedResponseDto<TicketListResponseDto>> GetTicketsAsync(TicketQueryParameters queryParameters, UserContext userContext, CancellationToken cancellationToken)
     {
         var query = BuildScopedQuery(userContext);
 
@@ -79,31 +80,32 @@ public class TicketService : ITicketService
             .OrderByDescending(t => t.CreatedAtUtc)
             .Skip((queryParameters.PageNumber - 1) * queryParameters.PageSize)
             .Take(queryParameters.PageSize)
-            .Select(t => new TicketListItemDto
+            .Select(t => new TicketListResponseDto
             {
                 Id = t.Id,
                 Title = t.Title,
                 Status = t.Status,
                 Priority = t.Priority,
                 CreatedAtUtc = t.CreatedAtUtc,
+                UpdatedAtUtc = t.UpdatedAtUtc,
                 CreatedByUserId = t.CreatedByUserId,
-                CreatedByUserName = t.CreatedByUser.FullName,
+                CreatedByName = t.CreatedByUser.FullName,
                 AssignedToUserId = t.AssignedToUserId,
-                AssignedToUserName = t.AssignedToUser != null ? t.AssignedToUser.FullName : null,
+                AssignedToName = t.AssignedToUser != null ? t.AssignedToUser.FullName : null,
                 CommentCount = t.Comments.Count
             })
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<TicketListItemDto>
+        return new PagedResult<TicketListResponseDto>
         {
             Items = items,
             PageNumber = queryParameters.PageNumber,
             PageSize = queryParameters.PageSize,
             TotalCount = totalCount
-        };
+        }.ToResponseDto();
     }
 
-    public async Task<TicketDetailDto> GetTicketByIdAsync(Guid ticketId, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<TicketResponseDto> GetTicketByIdAsync(Guid ticketId, UserContext userContext, CancellationToken cancellationToken)
     {
         var ticket = await _ticketRepository.Query()
             .Include(t => t.CreatedByUser)
@@ -120,10 +122,10 @@ public class TicketService : ITicketService
         }
 
         EnsureTicketAccess(ticket, userContext);
-        return ticket.ToDetailDto();
+        return ticket.ToResponseDto();
     }
 
-    public async Task<TicketDetailDto> UpdateStatusAsync(Guid ticketId, UpdateTicketStatusRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<TicketResponseDto> UpdateStatusAsync(Guid ticketId, UpdateTicketStatusRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
         EnsureSupportRole(userContext);
 
@@ -158,7 +160,7 @@ public class TicketService : ITicketService
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
-    public async Task<TicketDetailDto> AssignTicketAsync(Guid ticketId, AssignTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<TicketResponseDto> AssignTicketAsync(Guid ticketId, AssignTicketRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
         EnsureSupportRole(userContext);
 
@@ -193,7 +195,7 @@ public class TicketService : ITicketService
         return await GetTicketByIdAsync(ticketId, userContext, cancellationToken);
     }
 
-    public async Task<TicketDetailDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
+    public async Task<TicketResponseDto> AddCommentAsync(Guid ticketId, AddCommentRequestDto request, UserContext userContext, CancellationToken cancellationToken)
     {
         var ticket = await GetTrackedTicketAsync(ticketId, cancellationToken);
         EnsureTicketAccess(ticket, userContext);

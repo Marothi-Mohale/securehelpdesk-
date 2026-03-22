@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.DTOs.Auth;
 using SecureHelpdesk.Application.Interfaces;
+using SecureHelpdesk.Application.Mapping;
 using SecureHelpdesk.Domain.Constants;
 using SecureHelpdesk.Domain.Entities;
 
@@ -84,13 +85,7 @@ public class AuthService : IAuthService
         {
             Token = token,
             ExpiresAtUtc = expiresAtUtc,
-            User = new UserProfileDto
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                Roles = roles
-            }
+            User = user.ToUserProfileDto(roles)
         };
     }
 }

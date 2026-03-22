@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecureHelpdesk.Api.Extensions;
-using SecureHelpdesk.Application.Common;
+using SecureHelpdesk.Application.DTOs.Common;
 using SecureHelpdesk.Application.DTOs.Tickets;
 using SecureHelpdesk.Application.Interfaces;
-using SecureHelpdesk.Application.Models;
+using SecureHelpdesk.Application.Mapping;
 using SecureHelpdesk.Domain.Constants;
-using SecureHelpdesk.Domain.Enums;
 
 namespace SecureHelpdesk.Api.Controllers;
 
@@ -23,32 +22,19 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResult<TicketListItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<TicketListItemDto>>> GetTickets(
-        [FromQuery] TicketStatus? status,
-        [FromQuery] TicketPriority? priority,
-        [FromQuery] string? assigneeId,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
+    [ProducesResponseType(typeof(PaginatedResponseDto<TicketListResponseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PaginatedResponseDto<TicketListResponseDto>>> GetTickets(
+        [FromQuery] TicketListQueryRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var query = new TicketQueryParameters
-        {
-            Status = status,
-            Priority = priority,
-            AssigneeId = assigneeId,
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        };
-
-        var result = await _ticketService.GetTicketsAsync(query, User.ToUserContext(), cancellationToken);
+        var result = await _ticketService.GetTicketsAsync(request.ToQueryParameters(), User.ToUserContext(), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{ticketId:guid}")]
-    [ProducesResponseType(typeof(TicketDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TicketDetailDto>> GetTicket(Guid ticketId, CancellationToken cancellationToken)
+    public async Task<ActionResult<TicketResponseDto>> GetTicket(Guid ticketId, CancellationToken cancellationToken)
     {
         var ticket = await _ticketService.GetTicketByIdAsync(ticketId, User.ToUserContext(), cancellationToken);
         return Ok(ticket);
@@ -56,8 +42,8 @@ public class TicketsController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent},{RoleNames.User}")]
-    [ProducesResponseType(typeof(TicketDetailDto), StatusCodes.Status201Created)]
-    public async Task<ActionResult<TicketDetailDto>> CreateTicket(CreateTicketRequestDto request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status201Created)]
+    public async Task<ActionResult<TicketResponseDto>> CreateTicket(CreateTicketRequestDto request, CancellationToken cancellationToken)
     {
         var ticket = await _ticketService.CreateTicketAsync(request, User.ToUserContext(), cancellationToken);
         return CreatedAtAction(nameof(GetTicket), new { ticketId = ticket.Id }, ticket);
@@ -65,8 +51,8 @@ public class TicketsController : ControllerBase
 
     [HttpPatch("{ticketId:guid}/status")]
     [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent}")]
-    [ProducesResponseType(typeof(TicketDetailDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<TicketDetailDto>> UpdateStatus(Guid ticketId, UpdateTicketStatusRequestDto request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TicketResponseDto>> UpdateStatus(Guid ticketId, UpdateTicketStatusRequestDto request, CancellationToken cancellationToken)
     {
         var ticket = await _ticketService.UpdateStatusAsync(ticketId, request, User.ToUserContext(), cancellationToken);
         return Ok(ticket);
@@ -74,16 +60,16 @@ public class TicketsController : ControllerBase
 
     [HttpPatch("{ticketId:guid}/assign")]
     [Authorize(Roles = $"{RoleNames.Admin},{RoleNames.Agent}")]
-    [ProducesResponseType(typeof(TicketDetailDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<TicketDetailDto>> AssignTicket(Guid ticketId, AssignTicketRequestDto request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TicketResponseDto>> AssignTicket(Guid ticketId, AssignTicketRequestDto request, CancellationToken cancellationToken)
     {
         var ticket = await _ticketService.AssignTicketAsync(ticketId, request, User.ToUserContext(), cancellationToken);
         return Ok(ticket);
     }
 
     [HttpPost("{ticketId:guid}/comments")]
-    [ProducesResponseType(typeof(TicketDetailDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<TicketDetailDto>> AddComment(Guid ticketId, AddCommentRequestDto request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(TicketResponseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TicketResponseDto>> AddComment(Guid ticketId, AddCommentRequestDto request, CancellationToken cancellationToken)
     {
         var ticket = await _ticketService.AddCommentAsync(ticketId, request, User.ToUserContext(), cancellationToken);
         return Ok(ticket);
