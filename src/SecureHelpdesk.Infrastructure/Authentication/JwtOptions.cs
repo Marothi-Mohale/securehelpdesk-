@@ -14,9 +14,8 @@ public class JwtOptions
     [MinLength(3)]
     public string Audience { get; init; } = string.Empty;
 
-    [Required]
     [MinLength(32)]
-    public string SecretKey { get; init; } = string.Empty;
+    public string SecretKey { get; set; } = string.Empty;
 
     [Range(5, 1440)]
     public int ExpirationMinutes { get; init; } = 60;

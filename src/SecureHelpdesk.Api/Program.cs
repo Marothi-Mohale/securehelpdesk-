@@ -2,6 +2,7 @@ using SecureHelpdesk.Api.Configuration;
 using SecureHelpdesk.Api.Middleware;
 using SecureHelpdesk.Infrastructure.Configuration;
 using SecureHelpdesk.Infrastructure.Seed;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,7 @@ app.UseAuthentication();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health", new HealthCheckOptions());
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
@@ -60,3 +62,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public partial class Program;

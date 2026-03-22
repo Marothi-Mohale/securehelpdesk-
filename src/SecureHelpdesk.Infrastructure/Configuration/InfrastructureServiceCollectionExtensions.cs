@@ -24,6 +24,13 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .PostConfigure(options =>
+            {
+                if (string.IsNullOrWhiteSpace(options.SecretKey))
+                {
+                    options.SecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? string.Empty;
+                }
+            })
             .ValidateDataAnnotations()
             .Validate(
                 options => !string.IsNullOrWhiteSpace(options.SecretKey) && options.SecretKey.Length >= 32,
@@ -44,6 +51,9 @@ public static class InfrastructureServiceCollectionExtensions
                         errorNumbersToAdd: null);
                 }));
 
+        services.AddHealthChecks()
+            .AddDbContextCheck<ApplicationDbContext>();
+
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -61,9 +71,18 @@ public static class InfrastructureServiceCollectionExtensions
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration is missing.");
+        if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
+        {
+            jwtOptions.SecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? string.Empty;
+        }
 
         var keyBytes = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = true;

@@ -63,7 +63,10 @@ This keeps controllers thin, business logic in services, and persistence concern
 - JWT bearer authentication
 - Swagger / OpenAPI via Swashbuckle
 - xUnit + Moq
+- ASP.NET Core integration testing via `WebApplicationFactory`
 - SQLite in-memory for lightweight service tests
+- GitHub Actions CI
+- Docker / docker-compose
 
 ## Authentication and Roles
 
@@ -121,12 +124,18 @@ Example JWT settings:
 "Jwt": {
   "Issuer": "SecureHelpdesk.Api",
   "Audience": "SecureHelpdesk.Client",
-  "SecretKey": "ChangeThisToARealSecretKeyAtLeast32Chars!",
+  "SecretKey": "",
   "ExpirationMinutes": 60
 }
 ```
 
-For real usage, the JWT secret should be moved to user secrets or environment variables.
+Set the JWT secret through an environment variable or user secret:
+
+```bash
+$env:JWT_SECRET_KEY="ReplaceThisWithARealJwtSecretKeyAtLeast32Chars"
+```
+
+The application will fall back to `JWT_SECRET_KEY` when `Jwt:SecretKey` is blank.
 
 ## Running Locally
 
@@ -149,6 +158,7 @@ dotnet restore
 5. Run the API:
 
 ```bash
+dotnet user-secrets set "JWT_SECRET_KEY" "ReplaceThisWithARealJwtSecretKeyAtLeast32Chars" --project src/SecureHelpdesk.Api
 dotnet run --project src/SecureHelpdesk.Api
 ```
 
@@ -160,6 +170,14 @@ http://localhost:5000/swagger
 ```
 
 The development startup flow redirects `/` to the lightweight demo client.
+
+## Health Check
+
+The API exposes a basic health endpoint for operational readiness checks:
+
+```text
+GET /health
+```
 
 ## Demo Credentials
 
@@ -211,6 +229,7 @@ Run the test suite with:
 
 ```bash
 dotnet test tests/SecureHelpdesk.Tests/SecureHelpdesk.Tests.csproj
+dotnet test tests/SecureHelpdesk.IntegrationTests/SecureHelpdesk.IntegrationTests.csproj
 ```
 
 Current test coverage focuses on high-value service behaviors:
@@ -222,8 +241,26 @@ Current test coverage focuses on high-value service behaviors:
 - validation/business-rule protection
 - ticket query filtering/sorting behavior
 - audit/comment side effects
+- HTTP integration coverage for login, unauthorized access, role restrictions, and ticket creation
 
 This is intentionally a focused suite rather than an overbuilt one.
+
+## CI and Containers
+
+The repository includes:
+
+- GitHub Actions CI at `.github/workflows/ci.yml`
+  - restore, build, and test on push/pull request
+- `Dockerfile`
+  - containerized API build and runtime image
+- `docker-compose.yml`
+  - API + SQL Server local container setup
+
+Run with Docker:
+
+```bash
+docker compose up --build
+```
 
 ## Sample Screenshots
 

@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=SecureHelpdeskDb;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True"
+      Jwt__Issuer: SecureHelpdesk.Api
+      Jwt__Audience: SecureHelpdesk.Client
+      JWT_SECRET_KEY: ReplaceThisWithARealJwtSecretKeyAtLeast32Chars
+      DemoData__SeedOnStartup: "true"
+      DemoData__AllowInNonDevelopment: "true"
+      DemoData__AdminPassword: "AdminDemo123!"
+      DemoData__AgentPassword: "AgentDemo123!"
+      DemoData__UserPassword: "UserDemo123!"
+    depends_on:
+      sqlserver:
+        condition: service_started
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Your_strong_password123"
+    ports:
+      - "1433:1433"

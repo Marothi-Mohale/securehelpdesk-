@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.appdata/
+.dotnet-cli/
+.nuget/
+docs/
+tests/
+*.log
