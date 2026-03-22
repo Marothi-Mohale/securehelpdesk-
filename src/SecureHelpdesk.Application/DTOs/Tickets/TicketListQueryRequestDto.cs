@@ -6,6 +6,9 @@ namespace SecureHelpdesk.Application.DTOs.Tickets;
 
 public class TicketListQueryRequestDto
 {
+    [StringLength(100)]
+    public string? Search { get; init; }
+
     [EnumDataType(typeof(TicketStatus))]
     public TicketStatus? Status { get; init; }
 

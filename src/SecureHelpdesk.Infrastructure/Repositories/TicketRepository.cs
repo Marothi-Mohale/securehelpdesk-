@@ -23,9 +23,6 @@ public class TicketRepository : ITicketRepository
     {
         return _dbContext.Tickets
             .AsNoTracking()
-            .Include(t => t.CreatedByUser)
-            .Include(t => t.AssignedToUser)
-            .Include(t => t.Comments)
             .AsQueryable();
     }
 

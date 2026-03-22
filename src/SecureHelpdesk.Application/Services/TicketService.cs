@@ -55,29 +55,9 @@ public class TicketService : ITicketService
 
     public async Task<PaginatedResponseDto<TicketListResponseDto>> GetTicketsAsync(TicketQueryParameters queryParameters, UserContext userContext, CancellationToken cancellationToken)
     {
-        var query = BuildScopedQuery(userContext);
-
-        if (queryParameters.Status.HasValue)
-        {
-            query = query.Where(t => t.Status == queryParameters.Status.Value);
-        }
-
-        if (queryParameters.Priority.HasValue)
-        {
-            query = query.Where(t => t.Priority == queryParameters.Priority.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(queryParameters.AssigneeId))
-        {
-            query = query.Where(t => t.AssignedToUserId == queryParameters.AssigneeId);
-        }
-
-        if (!string.IsNullOrWhiteSpace(queryParameters.CreatedByUserId))
-        {
-            query = query.Where(t => t.CreatedByUserId == queryParameters.CreatedByUserId);
-        }
-
-        query = ApplySorting(query, queryParameters);
+        var query = ApplySorting(
+            ApplyFilters(BuildScopedQuery(userContext), queryParameters),
+            queryParameters);
 
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
@@ -308,6 +288,39 @@ public class TicketService : ITicketService
             (TicketSortBy.CreatedAt, SortDirection.Asc) => query.OrderBy(t => t.CreatedAtUtc),
             _ => query.OrderByDescending(t => t.CreatedAtUtc)
         };
+    }
+
+    private static IQueryable<Ticket> ApplyFilters(IQueryable<Ticket> query, TicketQueryParameters queryParameters)
+    {
+        if (!string.IsNullOrWhiteSpace(queryParameters.Search))
+        {
+            var search = queryParameters.Search.Trim();
+            query = query.Where(t =>
+                EF.Functions.Like(t.Title, $"%{search}%") ||
+                EF.Functions.Like(t.Description, $"%{search}%"));
+        }
+
+        if (queryParameters.Status.HasValue)
+        {
+            query = query.Where(t => t.Status == queryParameters.Status.Value);
+        }
+
+        if (queryParameters.Priority.HasValue)
+        {
+            query = query.Where(t => t.Priority == queryParameters.Priority.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(queryParameters.AssigneeId))
+        {
+            query = query.Where(t => t.AssignedToUserId == queryParameters.AssigneeId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(queryParameters.CreatedByUserId))
+        {
+            query = query.Where(t => t.CreatedByUserId == queryParameters.CreatedByUserId);
+        }
+
+        return query;
     }
 
     private static void EnsureCanViewTicket(Ticket ticket, UserContext userContext)

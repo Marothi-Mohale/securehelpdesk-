@@ -26,6 +26,8 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         entity.HasIndex(t => t.AssignedToUserId);
         entity.HasIndex(t => t.CreatedByUserId);
         entity.HasIndex(t => t.CreatedAtUtc);
+        entity.HasIndex(t => t.UpdatedAtUtc);
+        entity.HasIndex(t => t.Title);
         entity.HasIndex(t => new { t.Status, t.Priority, t.AssignedToUserId });
         entity.HasIndex(t => new { t.CreatedByUserId, t.CreatedAtUtc });
         entity.HasIndex(t => new { t.AssignedToUserId, t.Status, t.CreatedAtUtc });

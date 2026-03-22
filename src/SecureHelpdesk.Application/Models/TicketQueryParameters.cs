@@ -8,6 +8,7 @@ public class TicketQueryParameters
     private int _pageNumber = 1;
     private int _pageSize = 10;
 
+    public string? Search { get; init; }
     public TicketStatus? Status { get; init; }
     public TicketPriority? Priority { get; init; }
     public string? AssigneeId { get; init; }

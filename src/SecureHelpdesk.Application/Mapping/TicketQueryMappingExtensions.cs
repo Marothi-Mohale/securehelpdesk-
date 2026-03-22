@@ -9,6 +9,7 @@ public static class TicketQueryMappingExtensions
     {
         return new TicketQueryParameters
         {
+            Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim(),
             Status = request.Status,
             Priority = request.Priority,
             AssigneeId = request.AssignedToUserId,
