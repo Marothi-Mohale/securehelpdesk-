@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "HezTGUwxrzkLpBfboPNbCoQrM+2rnNrct/Jr0D2rOlg=",
+  "Source": "SecureHelpdesk.Api",
+  "BasePath": "_content/SecureHelpdesk.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

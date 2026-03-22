@@ -1,10 +1,11 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 using SecureHelpdesk.Application.Common;
 using SecureHelpdesk.Application.Interfaces;

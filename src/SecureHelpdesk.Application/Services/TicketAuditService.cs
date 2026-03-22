@@ -6,61 +6,61 @@ namespace SecureHelpdesk.Application.Services;
 
 public class TicketAuditService : ITicketAuditService
 {
-    public void RecordTicketCreated(Ticket ticket, string changedByUserId)
+    public TicketAuditLog RecordTicketCreated(Ticket ticket, string changedByUserId)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.TicketCreated,
-            newValue: $"Status: {ticket.Status}; Priority: {ticket.Priority}"));
+            newValue: $"Status: {ticket.Status}; Priority: {ticket.Priority}");
     }
 
-    public void RecordStatusChanged(Ticket ticket, string changedByUserId, TicketStatus oldStatus, TicketStatus newStatus)
+    public TicketAuditLog RecordStatusChanged(Ticket ticket, string changedByUserId, TicketStatus oldStatus, TicketStatus newStatus)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.StatusChanged,
             oldValue: oldStatus.ToString(),
-            newValue: newStatus.ToString()));
+            newValue: newStatus.ToString());
     }
 
-    public void RecordAssignmentChanged(Ticket ticket, string changedByUserId, string? oldAssigneeLabel, string newAssigneeLabel)
+    public TicketAuditLog RecordAssignmentChanged(Ticket ticket, string changedByUserId, string? oldAssigneeLabel, string newAssigneeLabel)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.AgentAssigned,
             oldValue: oldAssigneeLabel,
-            newValue: newAssigneeLabel));
+            newValue: newAssigneeLabel);
     }
 
-    public void RecordPriorityChanged(Ticket ticket, string changedByUserId, TicketPriority oldPriority, TicketPriority newPriority)
+    public TicketAuditLog RecordPriorityChanged(Ticket ticket, string changedByUserId, TicketPriority oldPriority, TicketPriority newPriority)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.PriorityChanged,
             oldValue: oldPriority.ToString(),
-            newValue: newPriority.ToString()));
+            newValue: newPriority.ToString());
     }
 
-    public void RecordTicketUpdated(Ticket ticket, string changedByUserId, IReadOnlyCollection<string> updates)
+    public TicketAuditLog RecordTicketUpdated(Ticket ticket, string changedByUserId, IReadOnlyCollection<string> updates)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.TicketUpdated,
-            newValue: string.Join("; ", updates)));
+            newValue: string.Join("; ", updates));
     }
 
-    public void RecordCommentAdded(Ticket ticket, string changedByUserId, string commentContent)
+    public TicketAuditLog RecordCommentAdded(Ticket ticket, string changedByUserId, string commentContent)
     {
-        ticket.AuditLogs.Add(CreateAuditLog(
+        return CreateAuditLog(
             ticketId: ticket.Id,
             changedByUserId: changedByUserId,
             actionType: AuditActionType.CommentAdded,
-            newValue: BuildCommentPreview(commentContent)));
+            newValue: BuildCommentPreview(commentContent));
     }
 
     private static TicketAuditLog CreateAuditLog(

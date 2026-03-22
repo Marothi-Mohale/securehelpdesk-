@@ -43,7 +43,7 @@ public class TicketService : ITicketService
             CreatedByUserId = userContext.UserId
         };
 
-        _ticketAuditService.RecordTicketCreated(ticket, userContext.UserId);
+        ticket.AuditLogs.Add(_ticketAuditService.RecordTicketCreated(ticket, userContext.UserId));
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
         await _ticketRepository.SaveChangesAsync(cancellationToken);
@@ -129,7 +129,9 @@ public class TicketService : ITicketService
 
         if (request.Priority.HasValue && ticket.Priority != request.Priority.Value)
         {
-            _ticketAuditService.RecordPriorityChanged(ticket, userContext.UserId, ticket.Priority, request.Priority.Value);
+            await _ticketRepository.AddAuditLogAsync(
+                _ticketAuditService.RecordPriorityChanged(ticket, userContext.UserId, ticket.Priority, request.Priority.Value),
+                cancellationToken);
             updates.Add("Priority updated");
             ticket.Priority = request.Priority.Value;
         }
@@ -140,7 +142,9 @@ public class TicketService : ITicketService
         }
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        _ticketAuditService.RecordTicketUpdated(ticket, userContext.UserId, updates);
+        await _ticketRepository.AddAuditLogAsync(
+            _ticketAuditService.RecordTicketUpdated(ticket, userContext.UserId, updates),
+            cancellationToken);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -164,7 +168,9 @@ public class TicketService : ITicketService
 
         ticket.Status = request.Status;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        _ticketAuditService.RecordStatusChanged(ticket, userContext.UserId, previousStatus, request.Status);
+        await _ticketRepository.AddAuditLogAsync(
+            _ticketAuditService.RecordStatusChanged(ticket, userContext.UserId, previousStatus, request.Status),
+            cancellationToken);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -207,7 +213,9 @@ public class TicketService : ITicketService
         ticket.AssignedToUserId = request.AgentUserId;
         ticket.UpdatedAtUtc = DateTime.UtcNow;
 
-        _ticketAuditService.RecordAssignmentChanged(ticket, userContext.UserId, previousAssigneeLabel, newAssigneeLabel);
+        await _ticketRepository.AddAuditLogAsync(
+            _ticketAuditService.RecordAssignmentChanged(ticket, userContext.UserId, previousAssigneeLabel, newAssigneeLabel),
+            cancellationToken);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -222,15 +230,17 @@ public class TicketService : ITicketService
         EnsureCanViewTicket(ticket, userContext);
         var commentContent = request.Content.Trim();
 
-        ticket.Comments.Add(new TicketComment
+        await _ticketRepository.AddCommentAsync(new TicketComment
         {
             TicketId = ticket.Id,
             AuthorUserId = userContext.UserId,
             Content = commentContent
-        });
+        }, cancellationToken);
 
         ticket.UpdatedAtUtc = DateTime.UtcNow;
-        _ticketAuditService.RecordCommentAdded(ticket, userContext.UserId, commentContent);
+        await _ticketRepository.AddAuditLogAsync(
+            _ticketAuditService.RecordCommentAdded(ticket, userContext.UserId, commentContent),
+            cancellationToken);
 
         await _ticketRepository.SaveChangesAsync(cancellationToken);
 
@@ -371,13 +381,13 @@ public class TicketService : ITicketService
 
     private static void EnsureValidStatusTransition(TicketStatus currentStatus, TicketStatus newStatus)
     {
-        var allowed = currentStatus switch
+        TicketStatus[] allowed = currentStatus switch
         {
             TicketStatus.Open => [TicketStatus.InProgress, TicketStatus.Closed],
             TicketStatus.InProgress => [TicketStatus.Resolved, TicketStatus.Closed],
             TicketStatus.Resolved => [TicketStatus.Closed, TicketStatus.InProgress],
             TicketStatus.Closed => [TicketStatus.InProgress],
-            _ => []
+            _ => Array.Empty<TicketStatus>()
         };
 
         if (!allowed.Contains(newStatus))

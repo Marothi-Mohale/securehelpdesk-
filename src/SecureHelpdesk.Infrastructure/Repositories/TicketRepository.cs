@@ -19,6 +19,16 @@ public class TicketRepository : ITicketRepository
         return _dbContext.Tickets.AddAsync(ticket, cancellationToken).AsTask();
     }
 
+    public Task AddCommentAsync(TicketComment comment, CancellationToken cancellationToken)
+    {
+        return _dbContext.TicketComments.AddAsync(comment, cancellationToken).AsTask();
+    }
+
+    public Task AddAuditLogAsync(TicketAuditLog auditLog, CancellationToken cancellationToken)
+    {
+        return _dbContext.TicketAuditLogs.AddAsync(auditLog, cancellationToken).AsTask();
+    }
+
     public IQueryable<Ticket> QueryForList()
     {
         return _dbContext.Tickets

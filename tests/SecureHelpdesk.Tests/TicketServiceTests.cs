@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -145,6 +146,7 @@ public class TicketServiceTests
 
         dbContext.Tickets.Add(ticket);
         await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
         return ticket;
     }
 
@@ -172,10 +174,15 @@ public class TicketServiceTests
 
     private static ApplicationDbContext CreateDbContext()
     {
+        var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseSqlite(connection)
             .Options;
 
-        return new ApplicationDbContext(options);
+        var dbContext = new ApplicationDbContext(options);
+        dbContext.Database.EnsureCreated();
+        return dbContext;
     }
 }

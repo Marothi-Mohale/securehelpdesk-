@@ -90,7 +90,7 @@ public class AuthService : IAuthService
 
     private async Task<AuthResponseDto> CreateResponseAsync(ApplicationUser user)
     {
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = (await _userManager.GetRolesAsync(user)).ToArray();
         var (token, expiresAtUtc) = await _tokenService.CreateTokenAsync(user, roles);
 
         return new AuthResponseDto

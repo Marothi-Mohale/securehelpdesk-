@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\SecureHelpdesk.Api.props" />
+</Project>

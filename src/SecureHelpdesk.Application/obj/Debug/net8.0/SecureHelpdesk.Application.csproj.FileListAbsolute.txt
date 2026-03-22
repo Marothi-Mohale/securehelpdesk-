@@ -1,0 +1,16 @@
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.csproj.AssemblyReference.cache
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.AssemblyInfoInputs.cache
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.AssemblyInfo.cs
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.csproj.CoreCompileInputs.cache
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.sourcelink.json
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\bin\Debug\net8.0\SecureHelpdesk.Application.deps.json
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\bin\Debug\net8.0\SecureHelpdesk.Application.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\bin\Debug\net8.0\SecureHelpdesk.Application.pdb
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\bin\Debug\net8.0\SecureHelpdesk.Domain.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\bin\Debug\net8.0\SecureHelpdesk.Domain.pdb
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHe.4AB25228.Up2Date
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\refint\SecureHelpdesk.Application.dll
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\SecureHelpdesk.Application.pdb
+C:\Users\Student\secureHelpdesk\src\SecureHelpdesk.Application\obj\Debug\net8.0\ref\SecureHelpdesk.Application.dll
