@@ -12,9 +12,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -32,7 +29,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

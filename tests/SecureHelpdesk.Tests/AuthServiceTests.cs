@@ -95,6 +95,28 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task RegisterAsync_Throws_When_Trimmed_FullName_Is_Empty()
+    {
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManager = CreateUserManager(userStore.Object);
+        var signInManager = CreateSignInManager(userManager.Object);
+
+        var service = new AuthService(userManager.Object, signInManager.Object, _tokenService.Object, _logger.Object);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() => service.RegisterAsync(
+            new RegisterRequestDto
+            {
+                FullName = "   ",
+                Email = "new.user@test.local",
+                Password = "Password123!"
+            },
+            CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        userManager.Verify(manager => manager.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task LoginAsync_Returns_Token_When_Credentials_Are_Valid()
     {
         var userStore = new Mock<IUserStore<ApplicationUser>>();

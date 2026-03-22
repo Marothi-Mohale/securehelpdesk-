@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -82,7 +81,7 @@ public static class InfrastructureServiceCollectionExtensions
                             StatusCodes.Status401Unauthorized,
                             "Authentication is required to access this resource.");
 
-                        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+                        await context.Response.WriteAsJsonAsync(payload);
                     },
                     OnForbidden = async context =>
                     {
@@ -94,7 +93,7 @@ public static class InfrastructureServiceCollectionExtensions
                             StatusCodes.Status403Forbidden,
                             "You do not have permission to access this resource.");
 
-                        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+                        await context.Response.WriteAsJsonAsync(payload);
                     }
                 };
                 options.TokenValidationParameters = new TokenValidationParameters

@@ -39,10 +39,13 @@ public class TicketService : ITicketService
             ["UserId"] = userContext.UserId
         });
 
+        var title = NormalizeRequiredText(request.Title, "Title", minimumLength: 5, maximumLength: 200);
+        var description = NormalizeRequiredText(request.Description, "Description", minimumLength: 10, maximumLength: 4000);
+
         var ticket = new Ticket
         {
-            Title = request.Title.Trim(),
-            Description = request.Description.Trim(),
+            Title = title,
+            Description = description,
             Priority = request.Priority,
             Status = TicketStatus.Open,
             CreatedByUserId = userContext.UserId
@@ -122,9 +125,9 @@ public class TicketService : ITicketService
 
         var updates = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(request.Title))
+        if (request.Title is not null)
         {
-            var newTitle = request.Title.Trim();
+            var newTitle = NormalizeRequiredText(request.Title, "Title", minimumLength: 5, maximumLength: 200);
             if (!string.Equals(ticket.Title, newTitle, StringComparison.Ordinal))
             {
                 updates.Add("Title updated");
@@ -132,9 +135,9 @@ public class TicketService : ITicketService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Description))
+        if (request.Description is not null)
         {
-            var newDescription = request.Description.Trim();
+            var newDescription = NormalizeRequiredText(request.Description, "Description", minimumLength: 10, maximumLength: 4000);
             if (!string.Equals(ticket.Description, newDescription, StringComparison.Ordinal))
             {
                 updates.Add("Description updated");
@@ -259,7 +262,7 @@ public class TicketService : ITicketService
 
         var ticket = await GetRequiredTicketAsync(ticketId, cancellationToken);
         EnsureCanViewTicket(ticket, userContext);
-        var commentContent = request.Content.Trim();
+        var commentContent = NormalizeRequiredText(request.Content, "Comment content", minimumLength: 1, maximumLength: 1000);
 
         var comment = new TicketComment
         {
@@ -431,5 +434,21 @@ public class TicketService : ITicketService
                 $"Status transition from {currentStatus} to {newStatus} is not allowed.",
                 StatusCodes.Status400BadRequest);
         }
+    }
+
+    private static string NormalizeRequiredText(string? input, string fieldName, int minimumLength, int maximumLength)
+    {
+        var normalized = input?.Trim() ?? string.Empty;
+
+        if (normalized.Length < minimumLength || normalized.Length > maximumLength)
+        {
+            throw new ApiException(
+                $"{fieldName} must be between {minimumLength} and {maximumLength} characters after trimming.",
+                StatusCodes.Status400BadRequest,
+                errorCode: "validation_failed",
+                title: "Validation Failed");
+        }
+
+        return normalized;
     }
 }

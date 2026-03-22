@@ -34,6 +34,11 @@ public class AuthService : IAuthService
         var normalizedEmail = NormalizeEmail(request.Email);
         var fullName = request.FullName.Trim();
 
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            throw new ApiException("Full name is required.", StatusCodes.Status400BadRequest, errorCode: "validation_failed", title: "Validation Failed");
+        }
+
         using var scope = _logger.BeginScope(new Dictionary<string, object?>
         {
             ["Email"] = LogSanitizer.MaskEmail(normalizedEmail)
@@ -60,7 +65,13 @@ public class AuthService : IAuthService
             throw new ApiException(message, StatusCodes.Status400BadRequest);
         }
 
-        await _userManager.AddToRoleAsync(user, RoleNames.User);
+        var addToRoleResult = await _userManager.AddToRoleAsync(user, RoleNames.User);
+        if (!addToRoleResult.Succeeded)
+        {
+            var message = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
+            throw new ApiException(message, StatusCodes.Status500InternalServerError);
+        }
+
         _logger.LogInformation("Registered new user {UserId} with default role {Role}", user.Id, RoleNames.User);
 
         return await CreateResponseAsync(user);

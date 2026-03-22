@@ -1,6 +1,4 @@
-using System.Text.Json;
 using SecureHelpdesk.Application.Common;
-using SecureHelpdesk.Application.DTOs.Common;
 
 namespace SecureHelpdesk.Api.Middleware;
 
@@ -70,6 +68,11 @@ public class ExceptionHandlingMiddleware
         string? title = null,
         IReadOnlyDictionary<string, string[]>? errors = null)
     {
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = statusCode;
 
@@ -77,6 +80,6 @@ public class ExceptionHandlingMiddleware
             ? ApiErrorResponseFactory.CreateValidation(context, errors, detail)
             : ApiErrorResponseFactory.Create(context, statusCode, detail, errorCode, title);
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+        await context.Response.WriteAsJsonAsync(payload);
     }
 }

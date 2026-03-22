@@ -82,6 +82,28 @@ public class TicketServiceTests
     }
 
     [Fact]
+    public async Task CreateTicketAsync_Throws_When_Trimmed_Text_Is_Invalid()
+    {
+        await using var dbContext = CreateDbContext();
+        await EnsureUserAsync(dbContext, "user-1", "user1@test.local", "User One");
+
+        var service = CreateService(dbContext);
+        var context = new UserContext("user-1", "user1@test.local", [RoleNames.User]);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() => service.CreateTicketAsync(
+            new CreateTicketRequestDto
+            {
+                Title = "     ",
+                Description = "          ",
+                Priority = TicketPriority.Low
+            },
+            context,
+            CancellationToken.None));
+
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Fact]
     public async Task UpdateStatusAsync_Throws_When_Role_Is_Not_Support()
     {
         await using var dbContext = CreateDbContext();
@@ -234,6 +256,24 @@ public class TicketServiceTests
 
         Assert.Single(reloadedTicket.Comments);
         Assert.Contains(reloadedTicket.AuditLogs, log => log.ActionType == AuditActionType.CommentAdded);
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_Throws_When_Content_Is_Whitespace()
+    {
+        await using var dbContext = CreateDbContext();
+        var ticket = await SeedTicketAsync(dbContext, "user-1");
+
+        var service = CreateService(dbContext);
+        var context = new UserContext("user-1", "user1@test.local", [RoleNames.User]);
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() => service.AddCommentAsync(
+            ticket.Id,
+            new AddCommentRequestDto { Content = "   " },
+            context,
+            CancellationToken.None));
+
+        Assert.Equal(400, exception.StatusCode);
     }
 
     [Fact]

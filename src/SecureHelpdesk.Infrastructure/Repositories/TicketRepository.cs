@@ -31,14 +31,13 @@ public class TicketRepository : ITicketRepository
 
     public IQueryable<Ticket> QueryForList()
     {
-        return _dbContext.Tickets
-            .AsNoTracking()
-            .AsQueryable();
+        return _dbContext.Tickets.AsNoTracking();
     }
 
     public Task<Ticket?> GetByIdWithDetailsAsync(Guid ticketId, CancellationToken cancellationToken)
     {
         return _dbContext.Tickets
+            .AsSplitQuery()
             .Include(t => t.CreatedByUser)
             .Include(t => t.AssignedToUser)
             .Include(t => t.Comments)

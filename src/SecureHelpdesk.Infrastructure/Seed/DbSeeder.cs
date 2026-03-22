@@ -33,6 +33,7 @@ public class DbSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
+        LogPasswordConfigurationWarning();
         await EnsureDatabaseAsync(cancellationToken);
         await EnsureRolesAsync();
 
@@ -62,6 +63,21 @@ public class DbSeeder
             ticketCount,
             commentCount,
             auditLogCount);
+    }
+
+    private void LogPasswordConfigurationWarning()
+    {
+        if (!string.IsNullOrWhiteSpace(_seedOptions.AdminPassword)
+            && !string.IsNullOrWhiteSpace(_seedOptions.AgentPassword)
+            && !string.IsNullOrWhiteSpace(_seedOptions.UserPassword))
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "Demo seed accounts are using the fallback password from {Section}:{Setting}. Override role-specific demo passwords in local configuration if these credentials will be shared.",
+            SeedOptions.SectionName,
+            nameof(SeedOptions.DefaultPassword));
     }
 
     private async Task EnsureDatabaseAsync(CancellationToken cancellationToken)
