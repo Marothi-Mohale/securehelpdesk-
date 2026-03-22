@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET_KEY: ThisIsAStrongCiJwtSecretKeyAtLeast32Chars
 
     steps:
       - name: Checkout
@@ -19,13 +21,26 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore API
+        run: dotnet restore src/SecureHelpdesk.Api/SecureHelpdesk.Api.csproj
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Restore Unit Tests
+        run: dotnet restore tests/SecureHelpdesk.Tests/SecureHelpdesk.Tests.csproj
 
-      - name: Test
-        env:
-          JWT_SECRET_KEY: ThisIsAStrongCiJwtSecretKeyAtLeast32Chars
-        run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Restore Integration Tests
+        run: dotnet restore tests/SecureHelpdesk.IntegrationTests/SecureHelpdesk.IntegrationTests.csproj
+
+      - name: Build API
+        run: dotnet build src/SecureHelpdesk.Api/SecureHelpdesk.Api.csproj --no-restore --configuration Release
+
+      - name: Build Unit Tests
+        run: dotnet build tests/SecureHelpdesk.Tests/SecureHelpdesk.Tests.csproj --no-restore --configuration Release
+
+      - name: Build Integration Tests
+        run: dotnet build tests/SecureHelpdesk.IntegrationTests/SecureHelpdesk.IntegrationTests.csproj --no-restore --configuration Release
+
+      - name: Test Unit Tests
+        run: dotnet test tests/SecureHelpdesk.Tests/SecureHelpdesk.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Test Integration Tests
+        run: dotnet test tests/SecureHelpdesk.IntegrationTests/SecureHelpdesk.IntegrationTests.csproj --no-build --configuration Release --verbosity normal
